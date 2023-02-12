@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
@@ -150,23 +151,26 @@ class ComicImageSize {
         return width;
       case 'height':
         return height;
+      default:
+        throw Exception("key must only be 'width' or 'height'");
     }
   }
 
   Map<String, dynamic> toJson() => {'width': width, 'height': height};
 }
 
-// TODO: DOES NOT WORK WITH COMPUTE
+// TODO: DOES NOT WORK WITH COMPUTE, BECAUSE IT USES Local Storage
 Future<List<ComicPage>> buildReadableVolumeOfMemoryImages(
     BuildReadableVolumeArgs args) async {
-  final inputStream = InputFileStream(args.volumeReadPath);
+  final inputStream = InputFileStream(args.absoluteVolumeReadPath);
   final archive = ZipDecoder().decodeBuffer(inputStream);
   late Map<String, ComicImageSize> sizes;
 
   try {
-    final init = (localStorage.getItem("${args.volumeReadPath}-image-sizes")
-            as Map<String, dynamic>?) ??
-        {};
+    final init =
+        (localStorage.getItem("${args.absoluteVolumeReadPath}-image-sizes")
+                as Map<String, dynamic>?) ??
+            {};
 
     sizes = init
         .map((key, value) => MapEntry(
@@ -194,9 +198,62 @@ Future<List<ComicPage>> buildReadableVolumeOfMemoryImages(
     return ComicPage(file: file, height: decoded.height, width: decoded.width);
   }));
 
-  localStorage.setItem("${args.volumeReadPath}-image-sizes", sizes);
+  localStorage.setItem("${args.absoluteVolumeReadPath}-image-sizes", sizes);
 
   pages.sort((a, b) => a.file.name.compareTo(b.file.name));
+
+  return pages;
+}
+
+Future<List<ComicPage>> buildReadableVolumeOfMemoryImagesTempCached(
+    BuildReadableVolumeArgs args) async {
+  final inputStream = InputFileStream(args.absoluteVolumeReadPath);
+  final archive = ZipDecoder().decodeBuffer(inputStream);
+  final tempDir = Directory(args.tempDir.path);
+  late Map<String, ComicImageSize> sizes;
+
+  final seriesName =
+      args.absoluteVolumeReadPath.split("/").reversed.skip(1).first;
+  final volumeName = basenameWithoutExtension(
+      args.absoluteVolumeReadPath.split("/").reversed.first);
+
+  final cachedSizes =
+      File("${tempDir.path}/$seriesName/$volumeName/sizes.json");
+  final doesCachedSizesExist = await cachedSizes.exists();
+
+  if (doesCachedSizesExist) {
+    try {
+      sizes = jsonDecode(await cachedSizes.readAsString())
+          .map((key, value) => MapEntry(key,
+              ComicImageSize(width: value['width'], height: value['height'])))
+          .cast<String, ComicImageSize>();
+    } catch (err) {
+      debugPrint(err.toString());
+    }
+  } else {
+    sizes = {};
+  }
+
+  final pages = await Future.wait(archive.files
+      .where((file) => lookupMimeType(file.name)?.split("/").first == "image")
+      .map((file) async {
+    if (doesCachedSizesExist) {
+      final decoded = sizes[file.name];
+      return ComicPage(
+          file: file, height: decoded!.height, width: decoded.width);
+    }
+
+    final decoded = await decodeImageFromList(file.content);
+    sizes[file.name] =
+        ComicImageSize(width: decoded.width, height: decoded.height);
+
+    return ComicPage(file: file, height: decoded.height, width: decoded.width);
+  }));
+
+  if (!doesCachedSizesExist) {
+    await cachedSizes.create();
+    await cachedSizes.writeAsString(json.encode(sizes));
+  }
 
   return pages;
 }

@@ -40,6 +40,7 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
   late ScrollController _overlayScrollController;
   late ValueNotifier<ReaderMode> _readerMode;
   late ValueNotifier<int> _currentPage;
+
   final ValueNotifier<List<int>> _displayedPages = ValueNotifier([]);
 
   late PageController _horizontalPaginatedPageController;
@@ -96,95 +97,123 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
       body: tempDirectoryProvider(
         loading: Container(),
         builder: (context, tempDir) {
-          return FutureBuilder(
-            future: buildReadableVolumeOfMemoryImages(BuildReadableVolumeArgs(
-                volumeReadPath: widget.arguments.absoluteVolumePath,
-                tempDir: tempDir)),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  return const Icon(
-                    Icons.error,
-                    size: 100,
-                    color: Colors.red,
-                  );
-                }
+          return doesVolumeHaveCachedSizes(
+            absoluteVolumeReadPath: widget.arguments.absoluteVolumePath,
+            loading: Container(),
+            builder: (context, cached) {
+              return FutureBuilder(
+                future: !cached
+                    ? Future.delayed(
+                        const Duration(milliseconds: 100),
+                        () => buildReadableVolumeOfMemoryImagesTempCached(
+                            BuildReadableVolumeArgs(
+                                absoluteVolumeReadPath:
+                                    widget.arguments.absoluteVolumePath,
+                                tempDir: tempDir)))
+                    : buildReadableVolumeOfMemoryImagesTempCached(
+                        BuildReadableVolumeArgs(
+                            absoluteVolumeReadPath:
+                                widget.arguments.absoluteVolumePath,
+                            tempDir: tempDir)),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      debugPrint(snapshot.error.toString());
 
-                return const SpinKitFadingCube(
-                  color: Colors.orange,
-                  size: 100,
-                );
-              }
+                      return const Icon(
+                        Icons.error,
+                        size: 100,
+                        color: Colors.red,
+                      );
+                    }
 
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  return WillPopScope(
-                    child: GestureDetector(
-                      child: ValueListenableBuilder(
-                        valueListenable: _readerMode,
-                        builder: (context, value, child) {
-                          switch (_readerMode.value) {
-                            case ReaderMode.horizontalPaginated:
-                              return HorizontalPaginatedReader(
-                                pages: snapshot.data!,
-                                currentPage: _currentPage,
-                                animateOverlayListViewToPage:
-                                    animateOverlayListViewToPage,
-                                horizontalPaginatedPageController:
-                                    _horizontalPaginatedPageController,
-                                showToNextVolumeOverlay:
-                                    showToNextVolumeOverlay,
-                                removeToNextVolumeOverlay:
-                                    removeToNextVolumeOverlay,
-                                setDisplayedPages: setDisplayedPages,
-                              );
-                            case ReaderMode.horizontalContinuous:
-                              return HorizontalContinuousReader(
-                                  pages: snapshot.data!);
-                            case ReaderMode.verticalPaginated:
-                              return VerticalPaginatedReader(
-                                  pages: snapshot.data!);
-                            case ReaderMode.verticalContinuous:
-                              return VerticalContinuousReader(
-                                pages: snapshot.data!,
-                                currentPage: _currentPage,
-                                verticalContinuousScrollController:
-                                    _verticalContinuousScrollController,
-                                constraints: constraints,
-                                animateOverlayListViewToPage:
-                                    animateOverlayListViewToPage,
-                                showToNextVolumeOverlay:
-                                    showToNextVolumeOverlay,
-                                removeToNextVolumeOverlay:
-                                    removeToNextVolumeOverlay,
-                                setDisplayedPages: setDisplayedPages,
-                              );
+                    if (!cached) {
+                      return const Center(
+                        child: Padding(padding: EdgeInsets.all(32),
+                        child: Text(
+                            "First Time Opening... Depending on the file size this may take a while",
+                            style: TextStyle(color: Colors.white), textAlign: TextAlign.center,),
+                      ));
+                    }
+
+                    return const SpinKitFadingCube(
+                      color: Colors.orange,
+                      size: 100,
+                    );
+                  }
+
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      return WillPopScope(
+                        child: GestureDetector(
+                          child: ValueListenableBuilder(
+                            valueListenable: _readerMode,
+                            builder: (context, value, child) {
+                              switch (_readerMode.value) {
+                                case ReaderMode.horizontalPaginated:
+                                  return HorizontalPaginatedReader(
+                                    pages: snapshot.data!,
+                                    currentPage: _currentPage,
+                                    animateOverlayListViewToPage:
+                                        animateOverlayListViewToPage,
+                                    horizontalPaginatedPageController:
+                                        _horizontalPaginatedPageController,
+                                    showToNextVolumeOverlay:
+                                        showToNextVolumeOverlay,
+                                    removeToNextVolumeOverlay:
+                                        removeToNextVolumeOverlay,
+                                    setDisplayedPages: setDisplayedPages,
+                                  );
+                                case ReaderMode.horizontalContinuous:
+                                  return HorizontalContinuousReader(
+                                      pages: snapshot.data!);
+                                case ReaderMode.verticalPaginated:
+                                  return VerticalPaginatedReader(
+                                      pages: snapshot.data!);
+                                case ReaderMode.verticalContinuous:
+                                  return VerticalContinuousReader(
+                                    pages: snapshot.data!,
+                                    currentPage: _currentPage,
+                                    verticalContinuousScrollController:
+                                        _verticalContinuousScrollController,
+                                    constraints: constraints,
+                                    animateOverlayListViewToPage:
+                                        animateOverlayListViewToPage,
+                                    showToNextVolumeOverlay:
+                                        showToNextVolumeOverlay,
+                                    removeToNextVolumeOverlay:
+                                        removeToNextVolumeOverlay,
+                                    setDisplayedPages: setDisplayedPages,
+                                  );
+                              }
+                            },
+                          ),
+                          onTapUp: (details) {
+                            overlayOnTapUpHandler(
+                                context, constraints, details, snapshot.data!);
+                          },
+                        ),
+                        onWillPop: () async {
+                          if (volumeSummaryOverlayEntry != null &&
+                              volumeSummaryOverlayEntry!.mounted) {
+                            volumeSummaryOverlayEntry!.remove();
                           }
+
+                          if (nextVolumeOverlayEntry.mounted) {
+                            nextVolumeOverlayEntry.remove();
+                          }
+
+                          // TODO: Save ReaderMode
+                          await setLocalStorageReaderMode(_readerMode.value);
+                          await setLocalStorageCurrentPage(_currentPage.value);
+
+                          SystemChrome.setEnabledSystemUIMode(
+                              SystemUiMode.manual,
+                              overlays: SystemUiOverlay.values);
+
+                          return true;
                         },
-                      ),
-                      onTapUp: (details) {
-                        overlayOnTapUpHandler(
-                            context, constraints, details, snapshot.data!);
-                      },
-                    ),
-                    onWillPop: () async {
-                      if (volumeSummaryOverlayEntry != null &&
-                          volumeSummaryOverlayEntry!.mounted) {
-                        volumeSummaryOverlayEntry!.remove();
-                      }
-
-                      if (nextVolumeOverlayEntry.mounted) {
-                        nextVolumeOverlayEntry.remove();
-                      }
-
-                      // TODO: Save ReaderMode
-                      await setLocalStorageReaderMode(_readerMode.value);
-                      await setLocalStorageCurrentPage(_currentPage.value);
-
-                      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-                          overlays: SystemUiOverlay.values);
-
-                      return true;
+                      );
                     },
                   );
                 },
@@ -216,7 +245,13 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
       if (volumeSummaryOverlayEntry!.mounted) {
         _overlayOpacityAnimationController.reverse().whenComplete(() {
           _isOverlayOpen.value = false;
-          volumeSummaryOverlayEntry!.remove();
+
+          try {
+            volumeSummaryOverlayEntry!.remove();
+          } catch (err) {
+            debugPrint(err.toString());
+            return;
+          }
         });
       } else {
         overlayState.insert(volumeSummaryOverlayEntry!);
@@ -303,7 +338,6 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                                         child: ext_img.ExtendedImage.memory(
                                           pages[index].file.content,
                                           clearMemoryCacheWhenDispose: true,
-                                          cacheWidth: 100,
                                           fit: BoxFit.cover,
                                         ),
                                         // child: Image.memory(
