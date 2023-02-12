@@ -290,47 +290,48 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
             curve: Curves.easeInOutExpo);
       } else {
         _overlayScrollController.jumpTo((_currentPage.value * 104) - 10);
-        _overlayScrollController.animateTo(
-            _currentPage.value * 104 + 10,
+        _overlayScrollController.animateTo(_currentPage.value * 104 + 10,
             duration: const Duration(milliseconds: 1000),
             curve: Curves.easeInOutExpo);
       }
     }
 
-    return Opacity(
-      opacity: _overlayOpacityAnimation.value,
-      child: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            height: constraints.maxHeight * 0.08,
-            width: constraints.maxWidth,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              color: Colors.grey.shade900.withOpacity(0.9),
-              child: Center(
-                child: AutoSizeText(
-                  basenameWithoutExtension(
-                      widget.arguments.absoluteVolumePath.split("/").last),
-                  style: const TextStyle(
-                      color: Colors.white, decoration: TextDecoration.none),
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
+    return Stack(
+      children: [
+        Positioned(
+          top: 0,
+          height: constraints.maxHeight * 0.08,
+          width: constraints.maxWidth,
+          child: Opacity(
+              opacity: _overlayOpacityAnimation.value,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                color: Colors.grey.shade900.withOpacity(0.9),
+                child: Center(
+                  child: AutoSizeText(
+                    basenameWithoutExtension(
+                        widget.arguments.absoluteVolumePath.split("/").last),
+                    style: const TextStyle(
+                        color: Colors.white, decoration: TextDecoration.none),
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            width: constraints.maxWidth,
-            height: clampDouble(constraints.maxHeight * 0.25, 150, 200),
-            child: ValueListenableBuilder(
-              valueListenable: _readerMode,
-              builder: (context, value, child) {
-                return ValueListenableBuilder(
-                  valueListenable: _currentPage,
-                  builder: (context, value, child) {
-                    return Container(
+              )),
+        ),
+        Positioned(
+          bottom: 0,
+          width: constraints.maxWidth,
+          height: clampDouble(constraints.maxHeight * 0.25, 150, 200),
+          child: ValueListenableBuilder(
+            valueListenable: _readerMode,
+            builder: (context, value, child) {
+              return ValueListenableBuilder(
+                valueListenable: _currentPage,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: _overlayOpacityAnimation.value,
+                    child: Container(
                       color: Colors.grey.shade900,
                       child: Column(
                         children: [
@@ -457,14 +458,14 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                           )
                         ],
                       ),
-                    );
-                  },
-                );
-              },
-            ),
-          )
-        ],
-      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        )
+      ],
     );
   }
 
