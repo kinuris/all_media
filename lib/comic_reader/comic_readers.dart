@@ -90,8 +90,13 @@ class _VerticalContinuousReaderState extends State<VerticalContinuousReader> {
         return snap.SizedBox(
           height: (widget.pages[index].height / widget.pages[index].width) *
               widget.constraints.maxWidth,
-          child: ext_img.ExtendedImage.memory(widget.pages[index].file.content,
-              clearMemoryCacheWhenDispose: true),
+          child: ext_img.ExtendedImage.memory(
+            widget.pages[index].file.content,
+            filterQuality: FilterQuality.medium,
+            height: (widget.pages[index].height / widget.pages[index].width) *
+                widget.constraints.maxWidth,
+            clearMemoryCacheWhenDispose: true,
+          ),
         );
       },
     );
@@ -120,20 +125,22 @@ class _VerticalPaginatedReaderState extends State<VerticalPaginatedReader> {
 
 // TODO: HORIZONTAL PAGINATED READER
 
-class HorizontalPaginatedReader extends StatefulWidget {
+class PaginatedReader extends StatefulWidget {
   final List<ComicPage> pages;
   final ValueNotifier<int> currentPage;
   final PageController horizontalPaginatedPageController;
+  final Axis axis;
   final void Function(int index) animateOverlayListViewToPage;
   final void Function(BuildContext context) showToNextVolumeOverlay;
   final void Function(List<int> pages) setDisplayedPages;
   final void Function() removeToNextVolumeOverlay;
 
-  const HorizontalPaginatedReader({
+  const PaginatedReader({
     Key? key,
     required this.pages,
     required this.currentPage,
     required this.animateOverlayListViewToPage,
+    required this.axis,
     required this.horizontalPaginatedPageController,
     required this.showToNextVolumeOverlay,
     required this.removeToNextVolumeOverlay,
@@ -141,11 +148,11 @@ class HorizontalPaginatedReader extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<HorizontalPaginatedReader> createState() =>
-      _HorizontalPaginatedReaderState();
+  State<PaginatedReader> createState() =>
+      _PaginatedReaderState();
 }
 
-class _HorizontalPaginatedReaderState extends State<HorizontalPaginatedReader> {
+class _PaginatedReaderState extends State<PaginatedReader> {
   @override
   void initState() {
     super.initState();
@@ -163,14 +170,16 @@ class _HorizontalPaginatedReaderState extends State<HorizontalPaginatedReader> {
     return PhotoViewGallery.builder(
       pageController: widget.horizontalPaginatedPageController,
       itemCount: widget.pages.length,
+      scrollDirection: widget.axis,
       allowImplicitScrolling: true,
+      gaplessPlayback: true,
       scrollPhysics: const HeavyScrollPhysics(),
       builder: (context, index) {
         return PhotoViewGalleryPageOptions(
             imageProvider: ext_img.ExtendedImage.memory(
           widget.pages[index].file.content,
+          filterQuality: FilterQuality.medium,
           clearMemoryCacheWhenDispose: true,
-          enableMemoryCache: false,
         ).image);
       },
       onPageChanged: (index) {
