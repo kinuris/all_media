@@ -53,12 +53,21 @@ class ComicVolumeReaderArgs {
 }
 
 class BuildReadableVolumeArgs {
-  final String volumeReadPath;
+  final String absoluteVolumeReadPath;
   final Directory tempDir;
 
-
   const BuildReadableVolumeArgs({
-    required this.volumeReadPath,
+    required this.absoluteVolumeReadPath,
     required this.tempDir,
+  });
+}
+
+class BuildReadableVolumeArgsStringVersion {
+  final String absoluteVolumeReadPath;
+  final String tempDirPath;
+
+  const BuildReadableVolumeArgsStringVersion({
+    required this.absoluteVolumeReadPath,
+    required this.tempDirPath,
   });
 }
