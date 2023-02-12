@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:inview_notifier_list/inview_notifier_list.dart';
 import 'package:path/path.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:v_2_all_media/util/arguments.dart';
@@ -43,12 +44,12 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
 
   final ValueNotifier<List<int>> _displayedPages = ValueNotifier([]);
 
-  late PageController _horizontalPaginatedPageController;
+  late PageController _paginatedPageController;
   late ItemScrollController _verticalContinuousScrollController;
 
   OverlayEntry? volumeSummaryOverlayEntry;
   late OverlayEntry nextVolumeOverlayEntry;
-  ListView? overlayPagesListView;
+  InViewNotifierList? overlayPagesListView;
 
   @override
   void initState() {
@@ -65,7 +66,7 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
     _overlayScrollController = ScrollController(
         initialScrollOffset: 104 * _currentPage.value.toDouble());
 
-    _horizontalPaginatedPageController = PageController();
+    _paginatedPageController = PageController();
     _verticalContinuousScrollController = ItemScrollController();
 
     nextVolumeOverlayEntry =
@@ -104,7 +105,7 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
               return FutureBuilder(
                 future: !cached
                     ? Future.delayed(
-                        const Duration(milliseconds: 100),
+                        const Duration(milliseconds: 300),
                         () => buildReadableVolumeOfMemoryImagesTempCached(
                             BuildReadableVolumeArgs(
                                 absoluteVolumeReadPath:
@@ -118,8 +119,6 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     if (snapshot.connectionState == ConnectionState.done) {
-                      debugPrint(snapshot.error.toString());
-
                       return const Icon(
                         Icons.error,
                         size: 100,
@@ -129,10 +128,13 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
 
                     if (!cached) {
                       return const Center(
-                        child: Padding(padding: EdgeInsets.all(32),
+                          child: Padding(
+                        padding: EdgeInsets.all(32),
                         child: Text(
-                            "First Time Opening... Depending on the file size this may take a while",
-                            style: TextStyle(color: Colors.white), textAlign: TextAlign.center,),
+                          "First Time Opening... Depending on the file size this may take a while",
+                          style: TextStyle(color: Colors.white),
+                          textAlign: TextAlign.center,
+                        ),
                       ));
                     }
 
@@ -151,13 +153,14 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                             builder: (context, value, child) {
                               switch (_readerMode.value) {
                                 case ReaderMode.horizontalPaginated:
-                                  return HorizontalPaginatedReader(
+                                  return PaginatedReader(
                                     pages: snapshot.data!,
                                     currentPage: _currentPage,
+                                    axis: Axis.horizontal,
                                     animateOverlayListViewToPage:
                                         animateOverlayListViewToPage,
                                     horizontalPaginatedPageController:
-                                        _horizontalPaginatedPageController,
+                                        _paginatedPageController,
                                     showToNextVolumeOverlay:
                                         showToNextVolumeOverlay,
                                     removeToNextVolumeOverlay:
@@ -168,8 +171,20 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                                   return HorizontalContinuousReader(
                                       pages: snapshot.data!);
                                 case ReaderMode.verticalPaginated:
-                                  return VerticalPaginatedReader(
-                                      pages: snapshot.data!);
+                                  return PaginatedReader(
+                                    pages: snapshot.data!,
+                                    currentPage: _currentPage,
+                                    axis: Axis.vertical,
+                                    animateOverlayListViewToPage:
+                                        animateOverlayListViewToPage,
+                                    horizontalPaginatedPageController:
+                                        _paginatedPageController,
+                                    showToNextVolumeOverlay:
+                                        showToNextVolumeOverlay,
+                                    removeToNextVolumeOverlay:
+                                        removeToNextVolumeOverlay,
+                                    setDisplayedPages: setDisplayedPages,
+                                  );
                                 case ReaderMode.verticalContinuous:
                                   return VerticalContinuousReader(
                                     pages: snapshot.data!,
@@ -233,6 +248,7 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
     if (details.localPosition.dy > upperBound &&
         details.localPosition.dy < lowerBound) {
       final overlayState = Overlay.of(context);
+
       volumeSummaryOverlayEntry ??= OverlayEntry(
           builder: (context) => getMangaOverlayWidget(constraints, pages));
 
@@ -267,9 +283,17 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
       if (_currentPage.value * 104 >=
           _overlayScrollController.position.maxScrollExtent) {
         _overlayScrollController
-            .jumpTo(_overlayScrollController.position.maxScrollExtent);
+            .jumpTo(_overlayScrollController.position.maxScrollExtent - 10);
+        _overlayScrollController.animateTo(
+            _overlayScrollController.position.maxScrollExtent + 10,
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.easeInOutExpo);
       } else {
-        _overlayScrollController.jumpTo(_currentPage.value * 104);
+        _overlayScrollController.jumpTo((_currentPage.value * 104) - 10);
+        _overlayScrollController.animateTo(
+            _currentPage.value * 104 + 10,
+            duration: const Duration(milliseconds: 1000),
+            curve: Curves.easeInOutExpo);
       }
     }
 
@@ -323,42 +347,113 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                             width: constraints.maxWidth,
                             height: constraints.maxHeight * 0.15,
                             child: overlayPagesListView ??
-                                (overlayPagesListView = ListView.builder(
+                                (overlayPagesListView = InViewNotifierList(
+                                  scrollDirection: Axis.horizontal,
                                   controller: _overlayScrollController,
                                   physics: const HeavyScrollPhysics(),
-                                  scrollDirection: Axis.horizontal,
                                   itemCount: pages.length,
-                                  itemBuilder: (context, index) {
-                                    return GestureDetector(
-                                      child: Container(
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 2),
-                                        width: 100,
-                                        height: constraints.maxHeight * 0.15,
-                                        child: ext_img.ExtendedImage.memory(
-                                          pages[index].file.content,
-                                          clearMemoryCacheWhenDispose: true,
-                                          fit: BoxFit.cover,
-                                        ),
-                                        // child: Image.memory(
-                                        //     pages[index].file.content,
-                                        //     fit: BoxFit.cover),
-                                      ),
-                                      onTapUp: (details) {
-                                        if (_readerMode.value ==
-                                            ReaderMode.horizontalPaginated) {
-                                          _horizontalPaginatedPageController
-                                              .jumpToPage(index);
-                                        } else if (_readerMode.value ==
-                                            ReaderMode.verticalContinuous) {
-                                          _verticalContinuousScrollController
-                                              .jumpTo(
-                                                  index: index, alignment: 0.5);
-                                        }
+                                  builder: (context, index) {
+                                    return InViewNotifierWidget(
+                                      id: "$index",
+                                      builder: (context, isInView, child) {
+                                        return Container(
+                                          width: 100,
+                                          margin: const EdgeInsets.all(2),
+                                          decoration: BoxDecoration(
+                                              border: Border.all(
+                                                  width: 1,
+                                                  color: Colors.white)),
+                                          child: GestureDetector(
+                                            child: isInView
+                                                ? ext_img.ExtendedImage.memory(
+                                                    pages[index].file.content,
+                                                    clearMemoryCacheWhenDispose:
+                                                        true,
+                                                    cacheWidth: 500,
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : Container(
+                                                    color: Colors.grey.shade900,
+                                                  ),
+                                            onTapUp: (details) {
+                                              if (_readerMode.value ==
+                                                  ReaderMode
+                                                      .horizontalPaginated) {
+                                                _paginatedPageController
+                                                    .jumpToPage(index);
+                                              } else if (_readerMode.value ==
+                                                  ReaderMode
+                                                      .verticalContinuous) {
+                                                _verticalContinuousScrollController
+                                                    .jumpTo(
+                                                        index: index,
+                                                        alignment: 0.5);
+                                              } else if (_readerMode.value ==
+                                                  ReaderMode
+                                                      .verticalPaginated) {
+                                                _paginatedPageController
+                                                    .jumpToPage(index);
+                                              }
+                                            },
+                                          ),
+                                        );
                                       },
                                     );
                                   },
+                                  isInViewPortCondition: (deltaTop, deltaBottom,
+                                      viewPortDimension) {
+                                    if (deltaTop >= -110 &&
+                                        deltaBottom <
+                                            constraints.maxWidth + 110) {
+                                      return true;
+                                    }
+
+                                    return false;
+                                  },
                                 )),
+                            // child: overlayPagesListView ??
+                            //     (overlayPagesListView = ListView.builder(
+                            //       addAutomaticKeepAlives: false,
+                            //       controller: _overlayScrollController,
+                            //       physics: const HeavyScrollPhysics(),
+                            //       scrollDirection: Axis.horizontal,
+                            //       itemCount: pages.length,
+                            //       itemBuilder: (context, index) {
+                            //         return GestureDetector(
+                            //           child: Container(
+                            //             margin: const EdgeInsets.symmetric(
+                            //                 horizontal: 2),
+                            //             width: 100,
+                            //             height: constraints.maxHeight * 0.15,
+                            //             child: ext_img.ExtendedImage.memory(
+                            //               pages[index].file.content,
+                            //               clearMemoryCacheWhenDispose: true,
+                            //               cacheWidth: 200,
+                            //               fit: BoxFit.cover,
+                            //             ),
+                            //             // child: Image.memory(
+                            //             //     pages[index].file.content,
+                            //             //     fit: BoxFit.cover),
+                            //           ),
+                            //           onTapUp: (details) {
+                            //             if (_readerMode.value ==
+                            //                 ReaderMode.horizontalPaginated) {
+                            //               _paginatedPageController
+                            //                   .jumpToPage(index);
+                            //             } else if (_readerMode.value ==
+                            //                 ReaderMode.verticalContinuous) {
+                            //               _verticalContinuousScrollController
+                            //                   .jumpTo(
+                            //                       index: index, alignment: 0.5);
+                            //             } else if (_readerMode.value ==
+                            //                 ReaderMode.verticalPaginated) {
+                            //               _paginatedPageController
+                            //                   .jumpToPage(index);
+                            //             }
+                            //           },
+                            //         );
+                            //       },
+                            //     )),
                           )
                         ],
                       ),
