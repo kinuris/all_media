@@ -205,6 +205,7 @@ Future<List<ComicPage>> buildReadableVolumeOfMemoryImages(
   return pages;
 }
 
+// TODO: Greatly Needs Optimization
 Future<List<ComicPage>> buildReadableVolumeOfMemoryImagesTempCached(
     BuildReadableVolumeArgs args) async {
   final inputStream = InputFileStream(args.absoluteVolumeReadPath);
@@ -237,12 +238,14 @@ Future<List<ComicPage>> buildReadableVolumeOfMemoryImagesTempCached(
   final pages = await Future.wait(archive.files
       .where((file) => lookupMimeType(file.name)?.split("/").first == "image")
       .map((file) async {
+
     if (doesCachedSizesExist) {
       final decoded = sizes[file.name];
       return ComicPage(
           file: file, height: decoded!.height, width: decoded.width);
     }
 
+    // TODO: This Specifically NEEDS OPTIMIZATIONS/ALTERNATIVES
     final decoded = await decodeImageFromList(file.content);
     sizes[file.name] =
         ComicImageSize(width: decoded.width, height: decoded.height);
@@ -254,6 +257,8 @@ Future<List<ComicPage>> buildReadableVolumeOfMemoryImagesTempCached(
     await cachedSizes.create();
     await cachedSizes.writeAsString(json.encode(sizes));
   }
+
+  pages.sort((a, b) => a.file.name.compareTo(b.file.name));
 
   return pages;
 }
