@@ -238,14 +238,13 @@ Future<List<ComicPage>> buildReadableVolumeOfMemoryImagesTempCached(
   final pages = await Future.wait(archive.files
       .where((file) => lookupMimeType(file.name)?.split("/").first == "image")
       .map((file) async {
-
     if (doesCachedSizesExist) {
       final decoded = sizes[file.name];
       return ComicPage(
           file: file, height: decoded!.height, width: decoded.width);
     }
 
-    // TODO: This Specifically NEEDS OPTIMIZATIONS/ALTERNATIVES
+    // TODO: First time calling file.content is extremely heavy
     final decoded = await decodeImageFromList(file.content);
     sizes[file.name] =
         ComicImageSize(width: decoded.width, height: decoded.height);
