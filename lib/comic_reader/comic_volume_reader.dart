@@ -269,8 +269,6 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
 
       if (volumeSummaryOverlayEntry!.mounted) {
         _overlayOpacityAnimationController.reverse().whenComplete(() {
-          // _isOverlayOpen.value = false;
-
           try {
             volumeSummaryOverlayEntry!.remove();
           } catch (err) {
@@ -281,7 +279,6 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
       } else {
         overlayState.insert(volumeSummaryOverlayEntry!);
         _overlayOpacityAnimationController.forward();
-        // _isOverlayOpen.value = true;
       }
     }
   }
