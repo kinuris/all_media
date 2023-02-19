@@ -34,8 +34,6 @@ class ComicVolumeReader extends StatefulWidget {
 
 class _ComicVolumeReaderState extends State<ComicVolumeReader>
     with SingleTickerProviderStateMixin {
-  final _isOverlayOpen = ValueNotifier(false);
-
   late AnimationController _overlayOpacityAnimationController;
   late Animation<double> _overlayOpacityAnimation;
   late ScrollController _overlayScrollController;
@@ -43,13 +41,16 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
   late ValueNotifier<int> _currentPage;
 
   final ValueNotifier<List<int>> _displayedPages = ValueNotifier([]);
+  final ValueNotifier<FilterQuality> _filterQuality =
+      ValueNotifier(FilterQuality.medium);
 
   late PageController _paginatedPageController;
   late ItemScrollController _verticalContinuousScrollController;
 
   OverlayEntry? volumeSummaryOverlayEntry;
   late OverlayEntry nextVolumeOverlayEntry;
-  InViewNotifierList? overlayPagesListView;
+  InViewNotifierList? overlayPagesNotifierListView;
+  ListView? overlayPagesListView;
 
   @override
   void initState() {
@@ -151,56 +152,64 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                           child: ValueListenableBuilder(
                             valueListenable: _readerMode,
                             builder: (context, value, child) {
-                              switch (_readerMode.value) {
-                                case ReaderMode.horizontalPaginated:
-                                  return PaginatedReader(
-                                    pages: snapshot.data!,
-                                    currentPage: _currentPage,
-                                    axis: Axis.horizontal,
-                                    animateOverlayListViewToPage:
-                                        animateOverlayListViewToPage,
-                                    horizontalPaginatedPageController:
-                                        _paginatedPageController,
-                                    showToNextVolumeOverlay:
-                                        showToNextVolumeOverlay,
-                                    removeToNextVolumeOverlay:
-                                        removeToNextVolumeOverlay,
-                                    setDisplayedPages: setDisplayedPages,
-                                  );
-                                case ReaderMode.horizontalContinuous:
-                                  return HorizontalContinuousReader(
-                                      pages: snapshot.data!);
-                                case ReaderMode.verticalPaginated:
-                                  return PaginatedReader(
-                                    pages: snapshot.data!,
-                                    currentPage: _currentPage,
-                                    axis: Axis.vertical,
-                                    animateOverlayListViewToPage:
-                                        animateOverlayListViewToPage,
-                                    horizontalPaginatedPageController:
-                                        _paginatedPageController,
-                                    showToNextVolumeOverlay:
-                                        showToNextVolumeOverlay,
-                                    removeToNextVolumeOverlay:
-                                        removeToNextVolumeOverlay,
-                                    setDisplayedPages: setDisplayedPages,
-                                  );
-                                case ReaderMode.verticalContinuous:
-                                  return VerticalContinuousReader(
-                                    pages: snapshot.data!,
-                                    currentPage: _currentPage,
-                                    verticalContinuousScrollController:
-                                        _verticalContinuousScrollController,
-                                    constraints: constraints,
-                                    animateOverlayListViewToPage:
-                                        animateOverlayListViewToPage,
-                                    showToNextVolumeOverlay:
-                                        showToNextVolumeOverlay,
-                                    removeToNextVolumeOverlay:
-                                        removeToNextVolumeOverlay,
-                                    setDisplayedPages: setDisplayedPages,
-                                  );
-                              }
+                              return ValueListenableBuilder(
+                                valueListenable: _filterQuality,
+                                builder: (context, value, child) {
+                                  switch (_readerMode.value) {
+                                    case ReaderMode.horizontalPaginated:
+                                      return PaginatedReader(
+                                        pages: snapshot.data!,
+                                        currentPage: _currentPage,
+                                        axis: Axis.horizontal,
+                                        filterQuality: value,
+                                        animateOverlayListViewToPage:
+                                            animateOverlayListViewToPage,
+                                        horizontalPaginatedPageController:
+                                            _paginatedPageController,
+                                        showToNextVolumeOverlay:
+                                            showToNextVolumeOverlay,
+                                        removeToNextVolumeOverlay:
+                                            removeToNextVolumeOverlay,
+                                        setDisplayedPages: setDisplayedPages,
+                                      );
+                                    case ReaderMode.horizontalContinuous:
+                                      return HorizontalContinuousReader(
+                                          pages: snapshot.data!);
+                                    case ReaderMode.verticalPaginated:
+                                      return PaginatedReader(
+                                        pages: snapshot.data!,
+                                        currentPage: _currentPage,
+                                        filterQuality: value,
+                                        axis: Axis.vertical,
+                                        animateOverlayListViewToPage:
+                                            animateOverlayListViewToPage,
+                                        horizontalPaginatedPageController:
+                                            _paginatedPageController,
+                                        showToNextVolumeOverlay:
+                                            showToNextVolumeOverlay,
+                                        removeToNextVolumeOverlay:
+                                            removeToNextVolumeOverlay,
+                                        setDisplayedPages: setDisplayedPages,
+                                      );
+                                    case ReaderMode.verticalContinuous:
+                                      return VerticalContinuousReader(
+                                        filterQuality: value,
+                                        pages: snapshot.data!,
+                                        currentPage: _currentPage,
+                                        verticalContinuousScrollController:
+                                            _verticalContinuousScrollController,
+                                        constraints: constraints,
+                                        animateOverlayListViewToPage:
+                                            animateOverlayListViewToPage,
+                                        showToNextVolumeOverlay:
+                                            showToNextVolumeOverlay,
+                                        removeToNextVolumeOverlay:
+                                            removeToNextVolumeOverlay,
+                                        setDisplayedPages: setDisplayedPages,
+                                      );
+                                  }
+                                },
+                              );
                             },
                           ),
                           onTapUp: (details) {
@@ -260,7 +269,7 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
 
       if (volumeSummaryOverlayEntry!.mounted) {
         _overlayOpacityAnimationController.reverse().whenComplete(() {
-          _isOverlayOpen.value = false;
+          // _isOverlayOpen.value = false;
 
           try {
             volumeSummaryOverlayEntry!.remove();
@@ -272,7 +281,7 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
       } else {
         overlayState.insert(volumeSummaryOverlayEntry!);
         _overlayOpacityAnimationController.forward();
-        _isOverlayOpen.value = true;
+        // _isOverlayOpen.value = true;
       }
     }
   }
@@ -283,15 +292,15 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
       if (_currentPage.value * 104 >=
           _overlayScrollController.position.maxScrollExtent) {
         _overlayScrollController
-            .jumpTo(_overlayScrollController.position.maxScrollExtent - 10);
+            .jumpTo(_overlayScrollController.position.maxScrollExtent - 1);
         _overlayScrollController.animateTo(
-            _overlayScrollController.position.maxScrollExtent + 10,
-            duration: const Duration(milliseconds: 1000),
+            _overlayScrollController.position.maxScrollExtent + 1,
+            duration: const Duration(milliseconds: 1),
             curve: Curves.easeInOutExpo);
       } else {
-        _overlayScrollController.jumpTo((_currentPage.value * 104) - 10);
-        _overlayScrollController.animateTo(_currentPage.value * 104 + 10,
-            duration: const Duration(milliseconds: 1000),
+        _overlayScrollController.jumpTo((_currentPage.value * 104) - 1);
+        _overlayScrollController.animateTo(_currentPage.value * 104 + 1,
+            duration: const Duration(milliseconds: 1),
             curve: Curves.easeInOutExpo);
       }
     }
@@ -318,6 +327,110 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                   ),
                 ),
               )),
+        ),
+        Positioned(
+          height: 200,
+          top: constraints.maxHeight * 0.15,
+          width: 50,
+          right: 10,
+          child: Opacity(
+            opacity: _overlayOpacityAnimation.value,
+            child: ValueListenableBuilder(
+              valueListenable: _filterQuality,
+              builder: (context, value, child) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(
+                      width: 45,
+                      height: 45,
+                      child: TextButton(
+                        onPressed: () {
+                          _filterQuality.value = FilterQuality.none;
+                        },
+                        style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all(
+                                Colors.grey.shade900.withOpacity(0.5)),
+                            shape:
+                                MaterialStateProperty.all(const OvalBorder())),
+                        child: Text(
+                          "N",
+                          style: TextStyle(
+                              color: _filterQuality.value == FilterQuality.none
+                                  ? Colors.orange
+                                  : Colors.white),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 45,
+                      height: 45,
+                      child: TextButton(
+                        onPressed: () {
+                          _filterQuality.value = FilterQuality.low;
+                        },
+                        style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all(
+                                Colors.grey.shade900.withOpacity(0.5)),
+                            shape:
+                                MaterialStateProperty.all(const OvalBorder())),
+                        child: Text(
+                          "L",
+                          style: TextStyle(
+                              color: _filterQuality.value == FilterQuality.low
+                                  ? Colors.orange
+                                  : Colors.white),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 45,
+                      height: 45,
+                      child: TextButton(
+                        onPressed: () {
+                          _filterQuality.value = FilterQuality.medium;
+                        },
+                        style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all(
+                                Colors.grey.shade900.withOpacity(0.5)),
+                            shape:
+                                MaterialStateProperty.all(const OvalBorder())),
+                        child: Text(
+                          "M",
+                          style: TextStyle(
+                              color:
+                                  _filterQuality.value == FilterQuality.medium
+                                      ? Colors.orange
+                                      : Colors.white),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 45,
+                      height: 45,
+                      child: TextButton(
+                        onPressed: () {
+                          _filterQuality.value = FilterQuality.high;
+                        },
+                        style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all(
+                                Colors.grey.shade900.withOpacity(0.5)),
+                            shape:
+                                MaterialStateProperty.all(const OvalBorder())),
+                        child: Text(
+                          "H",
+                          style: TextStyle(
+                              color: _filterQuality.value == FilterQuality.high
+                                  ? Colors.orange
+                                  : Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ),
         Positioned(
           bottom: 0,
@@ -347,8 +460,9 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                           SizedBox(
                             width: constraints.maxWidth,
                             height: constraints.maxHeight * 0.15,
-                            child: overlayPagesListView ??
-                                (overlayPagesListView = InViewNotifierList(
+                            child: overlayPagesNotifierListView ??
+                                (overlayPagesNotifierListView =
+                                    InViewNotifierList(
                                   scrollDirection: Axis.horizontal,
                                   controller: _overlayScrollController,
                                   physics: const HeavyScrollPhysics(),
@@ -359,7 +473,8 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                                       builder: (context, isInView, child) {
                                         return Container(
                                           width: 100,
-                                          margin: const EdgeInsets.all(2),
+                                          margin: const EdgeInsets.symmetric(
+                                              horizontal: 2),
                                           decoration: BoxDecoration(
                                               border: Border.all(
                                                   width: 1,
@@ -412,49 +527,6 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                                     return false;
                                   },
                                 )),
-                            // child: overlayPagesListView ??
-                            //     (overlayPagesListView = ListView.builder(
-                            //       addAutomaticKeepAlives: false,
-                            //       controller: _overlayScrollController,
-                            //       physics: const HeavyScrollPhysics(),
-                            //       scrollDirection: Axis.horizontal,
-                            //       itemCount: pages.length,
-                            //       itemBuilder: (context, index) {
-                            //         return GestureDetector(
-                            //           child: Container(
-                            //             margin: const EdgeInsets.symmetric(
-                            //                 horizontal: 2),
-                            //             width: 100,
-                            //             height: constraints.maxHeight * 0.15,
-                            //             child: ext_img.ExtendedImage.memory(
-                            //               pages[index].file.content,
-                            //               clearMemoryCacheWhenDispose: true,
-                            //               cacheWidth: 200,
-                            //               fit: BoxFit.cover,
-                            //             ),
-                            //             // child: Image.memory(
-                            //             //     pages[index].file.content,
-                            //             //     fit: BoxFit.cover),
-                            //           ),
-                            //           onTapUp: (details) {
-                            //             if (_readerMode.value ==
-                            //                 ReaderMode.horizontalPaginated) {
-                            //               _paginatedPageController
-                            //                   .jumpToPage(index);
-                            //             } else if (_readerMode.value ==
-                            //                 ReaderMode.verticalContinuous) {
-                            //               _verticalContinuousScrollController
-                            //                   .jumpTo(
-                            //                       index: index, alignment: 0.5);
-                            //             } else if (_readerMode.value ==
-                            //                 ReaderMode.verticalPaginated) {
-                            //               _paginatedPageController
-                            //                   .jumpToPage(index);
-                            //             }
-                            //           },
-                            //         );
-                            //       },
-                            //     )),
                           )
                         ],
                       ),

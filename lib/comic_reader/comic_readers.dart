@@ -13,6 +13,7 @@ class VerticalContinuousReader extends StatefulWidget {
   final ValueNotifier<int> currentPage;
   final ItemScrollController verticalContinuousScrollController;
   final BoxConstraints constraints;
+  final FilterQuality filterQuality;
   final void Function(int index) animateOverlayListViewToPage;
   final void Function(BuildContext context) showToNextVolumeOverlay;
   final void Function(List<int> pages) setDisplayedPages;
@@ -23,6 +24,7 @@ class VerticalContinuousReader extends StatefulWidget {
     required this.pages,
     required this.currentPage,
     required this.constraints,
+    required this.filterQuality,
     required this.verticalContinuousScrollController,
     required this.animateOverlayListViewToPage,
     required this.showToNextVolumeOverlay,
@@ -92,7 +94,7 @@ class _VerticalContinuousReaderState extends State<VerticalContinuousReader> {
               widget.constraints.maxWidth,
           child: ext_img.ExtendedImage.memory(
             widget.pages[index].file.content,
-            filterQuality: FilterQuality.medium,
+            filterQuality: widget.filterQuality,
             height: (widget.pages[index].height / widget.pages[index].width) *
                 widget.constraints.maxWidth,
             clearMemoryCacheWhenDispose: true,
@@ -128,6 +130,7 @@ class _VerticalPaginatedReaderState extends State<VerticalPaginatedReader> {
 class PaginatedReader extends StatefulWidget {
   final List<ComicPage> pages;
   final ValueNotifier<int> currentPage;
+  final FilterQuality filterQuality;
   final PageController horizontalPaginatedPageController;
   final Axis axis;
   final void Function(int index) animateOverlayListViewToPage;
@@ -141,6 +144,7 @@ class PaginatedReader extends StatefulWidget {
     required this.currentPage,
     required this.animateOverlayListViewToPage,
     required this.axis,
+    required this.filterQuality,
     required this.horizontalPaginatedPageController,
     required this.showToNextVolumeOverlay,
     required this.removeToNextVolumeOverlay,
@@ -172,13 +176,12 @@ class _PaginatedReaderState extends State<PaginatedReader> {
       itemCount: widget.pages.length,
       scrollDirection: widget.axis,
       allowImplicitScrolling: true,
-      gaplessPlayback: true,
       scrollPhysics: const HeavyScrollPhysics(),
       builder: (context, index) {
         return PhotoViewGalleryPageOptions(
+          filterQuality: widget.filterQuality,
             imageProvider: ext_img.ExtendedImage.memory(
           widget.pages[index].file.content,
-          filterQuality: FilterQuality.medium,
           clearMemoryCacheWhenDispose: true,
         ).image);
       },
