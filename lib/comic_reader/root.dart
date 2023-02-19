@@ -18,7 +18,12 @@ class Root extends StatefulWidget {
   State<Root> createState() => _RootState();
 }
 
-enum RootAction { addFolderResource, removeFolderResource, initialize }
+enum RootAction {
+  addFolderResource,
+  removeFolderResource,
+  addMangaDexChapter,
+  initialize
+}
 
 class _RootState extends State<Root> {
   final List<String> _folderResources = getLocalStorageFolderResources() ?? [];
@@ -56,13 +61,13 @@ class _RootState extends State<Root> {
 
   @override
   Widget build(BuildContext context) {
-
     final scaffold = Scaffold(
       floatingActionButton: AddResourceFloatingActionButton(
         addFolderResource: addFolderResource,
       ),
       body: Stack(
-        alignment: _folderResources.isEmpty ? Alignment.center : Alignment.topCenter,
+        alignment:
+            _folderResources.isEmpty ? Alignment.center : Alignment.topCenter,
         children: [
           const BackgroundImage(),
           const BackgroundGradient(),
@@ -187,7 +192,7 @@ class _AddResourceFloatingActionButtonState
           child: const Icon(Icons.folder),
           backgroundColor: Colors.orange.withOpacity(0.3),
           foregroundColor: Colors.white,
-          label: 'Add Folder Resource',
+          label: 'Folder Resource',
           labelBackgroundColor: Colors.orange,
           labelStyle: const TextStyle(fontSize: 18.0),
           onTap: () async {
@@ -204,7 +209,9 @@ class _AddResourceFloatingActionButtonState
 
               if (cbzCount < 1) {
                 if (context.mounted) {
-                  showSnackBarMessage(context, "Folder resource must contain .cbz files", millis: 1000);
+                  showSnackBarMessage(
+                      context, "Folder resource must contain .cbz files",
+                      millis: 1000);
                 }
 
                 return;
@@ -212,6 +219,31 @@ class _AddResourceFloatingActionButtonState
 
               widget.addFolderResource(result);
             }
+          },
+        ),
+        SpeedDialChild(
+          child: const Icon(
+            Icons.settings_system_daydream,
+            size: 25,
+          ),
+          backgroundColor: Colors.orange.withOpacity(0.3),
+          foregroundColor: Colors.white,
+          label: 'MangaDex Series',
+          labelBackgroundColor: Colors.orange,
+          labelStyle: const TextStyle(fontSize: 18.0),
+        ),
+        SpeedDialChild(
+          child: const Icon(
+            Icons.settings_system_daydream,
+            size: 25,
+          ),
+          backgroundColor: Colors.orange.withOpacity(0.3),
+          foregroundColor: Colors.white,
+          label: 'MangaDex Chapter',
+          labelBackgroundColor: Colors.orange,
+          labelStyle: const TextStyle(fontSize: 18.0),
+          onTap: () {
+            Navigator.pushNamed(context, '/mangadex-chapter-selector');
           },
         ),
       ],
