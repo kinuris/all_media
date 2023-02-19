@@ -105,10 +105,11 @@ class _MangaDexChapterSelectorState extends State<MangaDexChapterSelector> {
                       contentPadding: const EdgeInsets.all(12),
                       leading: Container(
                         decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12)),
+                          color: Colors.orange,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         height: 50,
                         width: 50,
-                        color: Colors.orange,
                       ),
                       title: Text(
                         _chapterIds[index],
