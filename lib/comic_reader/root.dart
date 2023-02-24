@@ -231,6 +231,9 @@ class _AddResourceFloatingActionButtonState
           label: 'MangaDex Series',
           labelBackgroundColor: Colors.orange,
           labelStyle: const TextStyle(fontSize: 18.0),
+          onTap: () {
+            Navigator.pushNamed(context, '/mangadex-manga-selector');
+          }
         ),
         SpeedDialChild(
           child: const Icon(

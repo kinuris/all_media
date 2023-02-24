@@ -42,88 +42,87 @@ class _MangaDexChapterSelectorState extends State<MangaDexChapterSelector> {
         child: Column(
           children: [
             Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      padding: const EdgeInsets.all(12),
-                      onPressed: () async {
-                        await showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              icon: const Icon(
-                                Icons.settings_system_daydream,
-                                size: 30,
-                              ),
-                              // ignore: prefer_const_constructors
-                              title: Text(
-                                "MangaDex Chapter ID",
-                                textAlign: TextAlign.center,
-                              ),
-                              content: TextField(
-                                controller: _textController,
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    if (_textController.text == "") {
-                                      return;
-                                    }
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    padding: const EdgeInsets.all(12),
+                    onPressed: () async {
+                      await showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            icon: const Icon(
+                              Icons.settings_system_daydream,
+                              size: 30,
+                            ),
+                            // ignore: prefer_const_constructors
+                            title: Text(
+                              "MangaDex Chapter ID",
+                              textAlign: TextAlign.center,
+                            ),
+                            content: TextField(
+                              controller: _textController,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  if (_textController.text == "") {
+                                    return;
+                                  }
 
-                                    if (!_chapterIds
-                                        .contains(_textController.text)) {
-                                      setChapterIds([
-                                        ..._chapterIds,
-                                        _textController.text
-                                      ]);
-                                    } else {
-                                      showSnackBarMessage(context,
-                                          "Chapter ID Already registered");
-                                    }
+                                  if (!_chapterIds
+                                      .contains(_textController.text)) {
+                                    setChapterIds(
+                                        [..._chapterIds, _textController.text]);
+                                  } else {
+                                    showSnackBarMessage(context,
+                                        "Chapter ID Already registered");
+                                  }
 
-                                    _textController.clear();
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text("Submit"),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    _textController.clear();
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text("Cancel"),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                      splashColor: Colors.orange.withOpacity(0.3),
-                      icon: const Icon(
-                        Icons.playlist_add_rounded,
-                        color: Colors.orange,
-                        size: 30,
-                      ),
+                                  _textController.clear();
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Submit"),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  _textController.clear();
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Cancel"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    splashColor: Colors.orange.withOpacity(0.3),
+                    icon: const Icon(
+                      Icons.playlist_add_rounded,
+                      color: Colors.orange,
+                      size: 30,
                     ),
-                    IconButton(
-                        padding: const EdgeInsets.all(12),
-                        splashColor: Colors.orange.withOpacity(0.3),
-                        onPressed: () {},
-                        icon: const Icon(Icons.download,
-                            color: Colors.orange, size: 30)),
-                    const SizedBox(
-                      width: 200,
-                      child: AutoSizeText(
-                        "MangaDex Chapter Selector",
-                        maxLines: 1,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    )
-                  ],
-                )),
+                  ),
+                  IconButton(
+                      padding: const EdgeInsets.all(12),
+                      splashColor: Colors.orange.withOpacity(0.3),
+                      onPressed: () {},
+                      icon: const Icon(Icons.download,
+                          color: Colors.orange, size: 30)),
+                  const SizedBox(
+                    width: 200,
+                    child: AutoSizeText(
+                      "MangaDex Chapter Selector",
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  )
+                ],
+              ),
+            ),
             Expanded(
               child: ListView.builder(
                 itemCount: _chapterIds.length,
