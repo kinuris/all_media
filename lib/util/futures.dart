@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:v_2_all_media/util/arguments.dart';
 import 'package:v_2_all_media/util/computations.dart';
+import 'package:http/http.dart' as http;
 
 Widget tempDirectoryProvider(
     {Widget loading = const Placeholder(),
@@ -27,10 +29,10 @@ Widget tempDirectoryProvider(
   );
 }
 
-Widget waitForFuture(
+Widget waitForFuture<T>(
     {Widget loading = const Placeholder(),
-    required Future future,
-    required Widget Function(BuildContext context) builder}) {
+    required Future<T> future,
+    required Widget Function(BuildContext context, T data) builder}) {
   return FutureBuilder(
     future: future,
     builder: (context, snapshot) {
@@ -38,8 +40,54 @@ Widget waitForFuture(
         return loading;
       }
 
-      return builder(context);
+      return builder(context, snapshot.data as T);
     },
+  );
+}
+
+class MangaDexChapter {
+  final Image coverImage;
+  final String title;
+  final String chapterNumber;
+
+  const MangaDexChapter(
+      {required this.coverImage,
+      required this.title,
+      required this.chapterNumber});
+}
+
+Future<MangaDexChapter?> getMangaDexChapterCover(String chapterId) async {
+  final res = await http.get(
+      Uri.parse("https://api.mangadex.org/at-home/server/$chapterId"),
+      headers: {
+        HttpHeaders.userAgentHeader: 'all_media/1.0',
+      });
+
+  if (res.statusCode >= 400) {
+    return null;
+  }
+
+  final decodedBody = jsonDecode(res.body);
+  final chapterHash = decodedBody['chapter']['hash'];
+  final coverEndpoint = decodedBody['chapter']['data'][0];
+
+  final coverLink =
+      "${decodedBody['baseUrl']}/data/$chapterHash/$coverEndpoint?scale=0.1";
+
+  final rawChapterDataResponse =
+      await http.get(Uri.parse("https://api.mangadex.org/chapter/$chapterId"));
+  final decodedChapterData = jsonDecode(rawChapterDataResponse.body);
+
+  final chapterTitle = decodedChapterData['data']['attributes']['title'];
+  final chapterNumber = decodedChapterData['data']['attributes']['chapter'];
+
+  return MangaDexChapter(
+    coverImage: Image.network(
+      coverLink,
+      fit: BoxFit.cover,
+    ),
+    title: chapterTitle,
+    chapterNumber: chapterNumber,
   );
 }
 

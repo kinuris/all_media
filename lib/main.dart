@@ -67,7 +67,9 @@ class Init extends StatelessWidget {
                 );
               case '/mangadex-chapter-selector':
                 return MaterialPageRoute(
-                    builder: (context) => const MangaDexChapterSelector());
+                    builder: (context) => const MangaDexChapterSelector(),
+                    settings: const RouteSettings(
+                        name: '/mangadex-chapter-selector'));
             }
 
             return null;
