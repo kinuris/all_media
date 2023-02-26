@@ -1,0 +1,1 @@
+class InvalidChapterException implements Exception {}

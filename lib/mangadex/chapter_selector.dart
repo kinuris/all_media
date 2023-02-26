@@ -68,6 +68,13 @@ class _MangaDexChapterSelectorState extends State<MangaDexChapterSelector> {
                             actions: [
                               TextButton(
                                 onPressed: () {
+                                  _textController.clear();
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Cancel"),
+                              ),
+                              TextButton(
+                                onPressed: () {
                                   if (_textController.text == "") {
                                     return;
                                   }
@@ -85,13 +92,6 @@ class _MangaDexChapterSelectorState extends State<MangaDexChapterSelector> {
                                   Navigator.pop(context);
                                 },
                                 child: const Text("Submit"),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  _textController.clear();
-                                  Navigator.pop(context);
-                                },
-                                child: const Text("Cancel"),
                               ),
                             ],
                           );

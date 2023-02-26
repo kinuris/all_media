@@ -327,7 +327,7 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
         ),
         Positioned(
           height: 200,
-          top: constraints.maxHeight * 0.15,
+          top: constraints.maxHeight * 0.08 + 20,
           width: 50,
           right: 10,
           child: Opacity(
@@ -603,6 +603,7 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                 ),
               ),
               onTapUp: (details) {
+                removeToNextVolumeOverlay();
                 Navigator.popAndPushNamed(context, '/comic-volume-reader',
                     arguments: ComicVolumeReaderArgs(
                         sortedVolumePaths: widget.arguments.sortedVolumePaths,

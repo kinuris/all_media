@@ -1,10 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:v_2_all_media/mangadex/api_types.dart';
 import 'package:v_2_all_media/util/computations.dart';
 import 'package:v_2_all_media/util/custom_scroll_physics.dart';
 import 'package:pixel_snap/material.dart' as snap;
 import 'package:extended_image/extended_image.dart' as ext_img;
+import 'package:v_2_all_media/util/futures.dart';
 
 // TODO: VERTICAL CONTINUOUS READER
 
@@ -126,9 +130,11 @@ class _VerticalPaginatedReaderState extends State<VerticalPaginatedReader> {
 }
 
 // TODO: HORIZONTAL PAGINATED READER
-
+// TODO:
+// ignore: must_be_immutable
 class PaginatedReader extends StatefulWidget {
-  final List<ComicPage> pages;
+  List<ComicPage>? pages;
+  MangaDexGetChapterData? mangaDexPages;
   final ValueNotifier<int> currentPage;
   final FilterQuality filterQuality;
   final PageController horizontalPaginatedPageController;
@@ -138,13 +144,14 @@ class PaginatedReader extends StatefulWidget {
   final void Function(List<int> pages) setDisplayedPages;
   final void Function() removeToNextVolumeOverlay;
 
-  const PaginatedReader({
+  PaginatedReader({
     Key? key,
-    required this.pages,
+    this.pages,
+    this.mangaDexPages,
+    this.filterQuality = FilterQuality.medium,
     required this.currentPage,
     required this.animateOverlayListViewToPage,
     required this.axis,
-    required this.filterQuality,
     required this.horizontalPaginatedPageController,
     required this.showToNextVolumeOverlay,
     required this.removeToNextVolumeOverlay,
@@ -152,52 +159,143 @@ class PaginatedReader extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<PaginatedReader> createState() =>
-      _PaginatedReaderState();
+  State<PaginatedReader> createState() => _PaginatedReaderState();
 }
 
 class _PaginatedReaderState extends State<PaginatedReader> {
   @override
   void initState() {
     super.initState();
+
+    assert(widget.pages != null || widget.mangaDexPages != null);
+
+    if (widget.pages != null) {
+      assert(widget.mangaDexPages == null);
+    } else if (widget.mangaDexPages != null) {
+      assert(widget.pages == null);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Defer to next tick
-    Future.delayed(Duration.zero, () {
-      widget.horizontalPaginatedPageController
-          .jumpToPage(widget.currentPage.value);
-      widget.setDisplayedPages([]);
-    });
+    if (widget.pages != null) {
+      // TODO: Defer to next tick
+      Future.delayed(Duration.zero, () {
+        widget.horizontalPaginatedPageController
+            .jumpToPage(widget.currentPage.value);
+        widget.setDisplayedPages([]);
+      });
 
-    return PhotoViewGallery.builder(
-      pageController: widget.horizontalPaginatedPageController,
-      itemCount: widget.pages.length,
-      scrollDirection: widget.axis,
-      allowImplicitScrolling: true,
-      scrollPhysics: const HeavyScrollPhysics(),
-      builder: (context, index) {
-        return PhotoViewGalleryPageOptions(
-          filterQuality: widget.filterQuality,
-            imageProvider: ext_img.ExtendedImage.memory(
-          widget.pages[index].file.content,
-          clearMemoryCacheWhenDispose: true,
-        ).image);
-      },
-      onPageChanged: (index) {
-        widget.currentPage.value = index;
-        widget.animateOverlayListViewToPage(index);
-        evaluateShowNextVolumeOverlayEntry(index);
-      },
-    );
+      return PhotoViewGallery.builder(
+        pageController: widget.horizontalPaginatedPageController,
+        itemCount: widget.pages!.length,
+        scrollDirection: widget.axis,
+        allowImplicitScrolling: true,
+        scrollPhysics: const HeavyScrollPhysics(),
+        builder: (context, index) {
+          return PhotoViewGalleryPageOptions(
+              filterQuality: widget.filterQuality,
+              imageProvider: ext_img.ExtendedImage.memory(
+                widget.pages![index].file.content,
+                clearMemoryCacheWhenDispose: true,
+              ).image);
+        },
+        onPageChanged: (index) {
+          widget.currentPage.value = index;
+          widget.animateOverlayListViewToPage(index);
+          evaluateShowNextVolumeOverlayEntry(index);
+        },
+      );
+    } else if (widget.mangaDexPages != null) {
+      return waitForFuture(
+        future: widget.mangaDexPages!.fetchImageLinks(),
+        loading: const SpinKitRing(color: Colors.orange, size: 100),
+        builder: (context, data) {
+          final imageProviders =
+              data.map((link) => CachedNetworkImageProvider(link)).toList();
+
+          for (var provider in imageProviders) {
+            precacheImage(provider, context);
+          }
+
+          Future.delayed(Duration.zero, () {
+            widget.horizontalPaginatedPageController
+                .jumpToPage(widget.currentPage.value);
+            widget.setDisplayedPages([]);
+          });
+
+          return PhotoViewGallery.builder(
+            scrollPhysics: const HeavyScrollPhysics(),
+            pageController: widget.horizontalPaginatedPageController,
+            scrollDirection: widget.axis,
+            itemCount: data.length,
+            builder: (context, index) {
+              return PhotoViewGalleryPageOptions.customChild(
+                child: SizedBox(
+                  child: Image(
+                    image: imageProviders[index],
+                    frameBuilder:
+                        (context, child, frame, wasSynchronouslyLoaded) {
+                      if (wasSynchronouslyLoaded) {
+                        return child;
+                      }
+
+                      return AnimatedCrossFade(
+                        firstChild:
+                            const SpinKitRing(color: Colors.orange, size: 100),
+                        secondChild: child,
+                        crossFadeState: frame == null
+                            ? CrossFadeState.showFirst
+                            : CrossFadeState.showSecond,
+                        duration: const Duration(milliseconds: 200),
+                        layoutBuilder: (topChild, topChildKey, bottomChild,
+                            bottomChildKey) {
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Positioned(
+                                key: bottomChildKey,
+                                child: bottomChild,
+                              ),
+                              Positioned(
+                                key: topChildKey,
+                                child: topChild,
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+            onPageChanged: (index) {
+              widget.animateOverlayListViewToPage(index);
+              widget.currentPage.value = index;
+              evaluateShowNextVolumeOverlayEntry(index);
+            },
+          );
+        },
+      );
+    }
+
+    return Container();
   }
 
   evaluateShowNextVolumeOverlayEntry(index) {
-    if (index == widget.pages.length - 1) {
-      widget.showToNextVolumeOverlay(context);
-    } else {
-      widget.removeToNextVolumeOverlay();
+    if (widget.pages != null) {
+      if (index == widget.pages!.length - 1) {
+        widget.showToNextVolumeOverlay(context);
+      } else {
+        widget.removeToNextVolumeOverlay();
+      }
+    } else if (widget.mangaDexPages != null) {
+      if (index == widget.mangaDexPages!.attributes.pages - 1) {
+        widget.showToNextVolumeOverlay(context);
+      } else {
+        widget.removeToNextVolumeOverlay();
+      }
     }
   }
 }

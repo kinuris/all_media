@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:v_2_all_media/mangadex/api_types.dart';
 import 'package:v_2_all_media/mangadex/chapter_selector.dart';
 import 'package:v_2_all_media/mangadex/manga_selector.dart';
+import 'package:v_2_all_media/mangadex/mangadex_volume_display.dart';
+import 'package:v_2_all_media/mangadex/mangadex_volume_reader.dart';
 import 'package:v_2_all_media/util/arguments.dart';
 import 'package:v_2_all_media/comic_reader/comic_volume_reader.dart';
 import 'package:v_2_all_media/comic_reader/comic_volumes_display.dart';
@@ -76,6 +79,20 @@ class Init extends StatelessWidget {
                     builder: (context) => const MangaDexMangaSelector(),
                     settings:
                         const RouteSettings(name: '/mangadex-manga-selector'));
+              case '/mangadex-volume-display':
+                final args = settings.arguments as MangaDexMangaAggregateResult;
+
+                return MaterialPageRoute(
+                    builder: (context) => MangaDexVolumeDisplay(args: args),
+                    settings:
+                        const RouteSettings(name: '/mangadex-volume-display'));
+              case '/mangadex-volume-reader':
+                final args = settings.arguments as MangaDexChapterReaderArgs;
+
+                return MaterialPageRoute(
+                    builder: (context) => MangaDexChapterReader(args: args),
+                    settings:
+                        const RouteSettings(name: '/mangadex-volume-reader'));
             }
 
             return null;

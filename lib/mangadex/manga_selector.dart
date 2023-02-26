@@ -62,7 +62,7 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                             ),
                             // ignore: prefer_const_constructors
                             title: Text(
-                              "MangaDex Manga ID",
+                              "MangaDex Manga ID or URL",
                               textAlign: TextAlign.center,
                             ),
                             content: TextField(
@@ -71,32 +71,62 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                             actions: [
                               TextButton(
                                 onPressed: () {
-                                  if (_textEditingController.text == "") {
-                                    return;
-                                  }
-
-                                  if (!_mangaIds
-                                      .contains(_textEditingController.text)) {
-                                    setMangaIds([
-                                      ..._mangaIds,
-                                      _textEditingController.text
-                                    ]);
-                                  } else {
-                                    showSnackBarMessage(context,
-                                        "Chapter ID Already registered");
-                                  }
-
-                                  _textEditingController.clear();
-                                  Navigator.pop(context);
-                                },
-                                child: const Text("Submit"),
-                              ),
-                              TextButton(
-                                onPressed: () {
                                   _textEditingController.clear();
                                   Navigator.pop(context);
                                 },
                                 child: const Text("Cancel"),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  if (_textEditingController.text == "") {
+                                    return;
+                                  }
+
+                                  final splitText =
+                                      _textEditingController.text.split("/");
+
+                                  late String parsedText;
+
+                                  if (splitText.length == 1) {
+                                    parsedText = splitText.first;
+                                  } else {
+                                    final revIter = splitText.reversed.iterator;
+
+                                    if (revIter.moveNext() &&
+                                        revIter.moveNext()) {
+                                      parsedText =
+                                          splitText.reversed.toList()[1];
+                                    } else {
+                                      parsedText = "0000-0000-0000-0000";
+                                    }
+                                  }
+
+                                  if (!await MangaDexGetMangaResult.isValidId(
+                                      parsedText)) {
+                                    _textEditingController.clear();
+
+                                    if (!context.mounted) return;
+                                    showSnackBarMessage(
+                                        context, "Manga is Invalid",
+                                        millis: 1000);
+
+                                    Navigator.pop(context);
+                                    return;
+                                  }
+
+                                  if (!_mangaIds.contains(parsedText)) {
+                                    setMangaIds([..._mangaIds, parsedText]);
+                                  } else {
+                                    if (!context.mounted) return;
+                                    showSnackBarMessage(
+                                        context, "Manga Already registered");
+                                  }
+
+                                  _textEditingController.clear();
+                                  if (!context.mounted) return;
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Submit"),
                               ),
                             ],
                           );
@@ -173,12 +203,17 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                           visualDensity: const VisualDensity(vertical: 4),
                           contentPadding: const EdgeInsets.all(6),
                           leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(5),
-                            child: const SizedBox(
-                              width: 40,
-                              child: SpinKitCircle(
+                            borderRadius: BorderRadius.circular(3),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.orange),
+                                  borderRadius: BorderRadius.circular(3)),
+                              width: 60,
+                              height: 150,
+                              child: const SpinKitRing(
                                 color: Colors.orange,
                                 size: 40,
+                                lineWidth: 3,
                               ),
                             ),
                           ),
@@ -204,16 +239,25 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                               child: SizedBox(
                                 width: 60,
                                 height: 150,
-                                child: Image.network(
-                                  data.coverLink,
-                                  fit: BoxFit.cover,
+                                child: GestureDetector(
+                                  onTapUp: (details) {
+                                    Navigator.pushNamed(
+                                        context, '/mangadex-volume-display',
+                                        arguments: data);
+                                  },
+                                  child: Image.network(
+                                    data.coverLink,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                             ),
                             title: AutoSizeText(
                               data.manga.data.attributes.titles['en'] ??
                                   data.manga.data.attributes.titles['jp-ro'] ??
-                                  data.manga.data.attributes.titles['jp']!,
+                                  data.manga.data.attributes.titles['jp'] ??
+                                  data.manga.data.attributes.titles.values
+                                      .first,
                               maxLines: 2,
                               style: const TextStyle(color: Colors.white),
                             ),
