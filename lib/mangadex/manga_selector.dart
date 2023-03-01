@@ -1,7 +1,8 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:v_2_all_media/mangadex/api_types.dart';
+import 'package:simple_mangadex_api/api_types.dart';
 import 'package:v_2_all_media/util/futures.dart';
 import 'package:v_2_all_media/util/helpers.dart';
 import 'package:v_2_all_media/util/local_storage_init.dart';
@@ -101,8 +102,7 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                                     }
                                   }
 
-                                  if (!await MangaDexGetMangaResult.isValidId(
-                                      parsedText)) {
+                                  if (!await Manga.isValidId(parsedText)) {
                                     _textEditingController.clear();
 
                                     if (!context.mounted) return;
@@ -219,16 +219,9 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                           ),
                         ),
                       ),
-                      future: MangaDexMangaAggregateResult.id(_mangaIds[index]),
+                      future: Manga.fromMangaDexMangaIdInfallible(
+                          _mangaIds[index], "en"),
                       builder: (context, data) {
-                        if (data == null) {
-                          return const Icon(
-                            Icons.error,
-                            size: 30,
-                            color: Colors.orange,
-                          );
-                        }
-
                         return Container(
                           color: Colors.grey[850],
                           child: ListTile(
@@ -242,22 +235,23 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                                 child: GestureDetector(
                                   onTapUp: (details) {
                                     Navigator.pushNamed(
-                                        context, '/mangadex-volume-display',
-                                        arguments: data);
+                                      context,
+                                      '/mangadex-volume-display',
+                                      arguments: data,
+                                    );
                                   },
-                                  child: Image.network(
-                                    data.coverLink,
+                                  child: CachedNetworkImage(
+                                    imageUrl: data.coverArtLink,
                                     fit: BoxFit.cover,
                                   ),
                                 ),
                               ),
                             ),
                             title: AutoSizeText(
-                              data.manga.data.attributes.titles['en'] ??
-                                  data.manga.data.attributes.titles['jp-ro'] ??
-                                  data.manga.data.attributes.titles['jp'] ??
-                                  data.manga.data.attributes.titles.values
-                                      .first,
+                              data.titles['en'] ??
+                                  data.titles['jp-ro'] ??
+                                  data.titles['jp'] ??
+                                  data.titles.values.first,
                               maxLines: 2,
                               style: const TextStyle(color: Colors.white),
                             ),

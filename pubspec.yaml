@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  simple_mangadex_api:
+    path: ./../simple_mangadex_api
 
 
   # The following adds the Cupertino Icons font to your application.

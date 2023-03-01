@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:v_2_all_media/mangadex/api_types.dart';
+import 'package:simple_mangadex_api/api_types.dart';
 import 'package:v_2_all_media/mangadex/chapter_selector.dart';
 import 'package:v_2_all_media/mangadex/manga_selector.dart';
 import 'package:v_2_all_media/mangadex/mangadex_volume_display.dart';
@@ -80,7 +80,7 @@ class Init extends StatelessWidget {
                     settings:
                         const RouteSettings(name: '/mangadex-manga-selector'));
               case '/mangadex-volume-display':
-                final args = settings.arguments as MangaDexMangaAggregateResult;
+                final args = settings.arguments as Manga;
 
                 return MaterialPageRoute(
                     builder: (context) => MangaDexVolumeDisplay(args: args),

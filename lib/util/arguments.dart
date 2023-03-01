@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:simple_mangadex_api/api_types.dart';
 import 'package:v_2_all_media/comic_reader/comic_volume_reader.dart';
-import 'package:v_2_all_media/mangadex/api_types.dart';
 
 class GenFolderResourceThumbnailArgs {
   final String folderResource;
@@ -74,7 +74,7 @@ class BuildReadableVolumeArgsStringVersion {
 }
 
 class MangaDexChapterReaderArgs {
-  final MangaDexMangaAggregateResult result;
+  final Manga result;
   final int currentIndex;
 
   const MangaDexChapterReaderArgs({
