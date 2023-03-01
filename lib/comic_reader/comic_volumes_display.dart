@@ -54,13 +54,15 @@ class VolumesDisplay extends StatelessWidget {
               }).toList();
 
               return SizedBox(
-                  height: MediaQuery.of(context).size.height - 60,
-                  child: GridView.count(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 6,
-                    crossAxisSpacing: 5,
-                    children: gridData,
-                  ));
+                height: MediaQuery.of(context).size.height - 60,
+                child: GridView.count(
+                  childAspectRatio: 1 / 1.5,
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 6,
+                  crossAxisSpacing: 5,
+                  children: gridData,
+                ),
+              );
             },
           );
         },

@@ -289,14 +289,14 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
       if (_currentPage.value * 104 >=
           _overlayScrollController.position.maxScrollExtent) {
         _overlayScrollController
-            .jumpTo(_overlayScrollController.position.maxScrollExtent - 1);
+            .jumpTo(_overlayScrollController.position.maxScrollExtent - 0.1);
         _overlayScrollController.animateTo(
-            _overlayScrollController.position.maxScrollExtent + 1,
+            _overlayScrollController.position.maxScrollExtent + 0.1,
             duration: const Duration(milliseconds: 1),
             curve: Curves.easeInOutExpo);
       } else {
-        _overlayScrollController.jumpTo((_currentPage.value * 104) - 1);
-        _overlayScrollController.animateTo(_currentPage.value * 104 + 1,
+        _overlayScrollController.jumpTo((_currentPage.value * 104) - 0.1);
+        _overlayScrollController.animateTo(_currentPage.value * 104 + 0.1,
             duration: const Duration(milliseconds: 1),
             curve: Curves.easeInOutExpo);
       }
@@ -478,12 +478,31 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
                                                   color: Colors.white)),
                                           child: GestureDetector(
                                             child: isInView
-                                                ? ext_img.ExtendedImage.memory(
-                                                    pages[index].file.content,
-                                                    clearMemoryCacheWhenDispose:
-                                                        true,
-                                                    cacheWidth: 500,
+                                                ? Image(
                                                     fit: BoxFit.cover,
+                                                    image: ext_img
+                                                        .ExtendedMemoryImageProvider(
+                                                      pages[index].file.content,
+                                                    ),
+                                                    frameBuilder: (context,
+                                                        child,
+                                                        frame,
+                                                        wasSynchronouslyLoaded) {
+                                                      if (wasSynchronouslyLoaded) {
+                                                        return child;
+                                                      }
+
+                                                      return AnimatedOpacity(
+                                                        opacity: frame == null
+                                                            ? 0
+                                                            : 1,
+                                                        duration:
+                                                            const Duration(
+                                                                milliseconds:
+                                                                    500),
+                                                        child: child,
+                                                      );
+                                                    },
                                                   )
                                                 : Container(
                                                     color: Colors.grey.shade900,
@@ -604,6 +623,12 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
               ),
               onTapUp: (details) {
                 removeToNextVolumeOverlay();
+
+                if (volumeSummaryOverlayEntry != null &&
+                    volumeSummaryOverlayEntry!.mounted) {
+                  volumeSummaryOverlayEntry!.remove();
+                }
+
                 Navigator.popAndPushNamed(context, '/comic-volume-reader',
                     arguments: ComicVolumeReaderArgs(
                         sortedVolumePaths: widget.arguments.sortedVolumePaths,
