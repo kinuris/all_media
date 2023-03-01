@@ -66,6 +66,7 @@ class FolderDisplay extends StatelessWidget {
               color: Colors.black.withOpacity(0.7),
             ),
             child: GridView.count(
+              childAspectRatio: 1 / 1.5,
               crossAxisCount: 3,
               padding: EdgeInsets.zero,
               crossAxisSpacing: 5,
