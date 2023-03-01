@@ -211,7 +211,7 @@ class _AddResourceFloatingActionButtonState
                 if (context.mounted) {
                   showSnackBarMessage(
                       context, "Folder resource must contain .cbz files",
-                      millis: 1000);
+                      millis: 1500);
                 }
 
                 return;
@@ -222,19 +222,18 @@ class _AddResourceFloatingActionButtonState
           },
         ),
         SpeedDialChild(
-          child: const Icon(
-            Icons.settings_system_daydream,
-            size: 25,
-          ),
-          backgroundColor: Colors.orange.withOpacity(0.3),
-          foregroundColor: Colors.white,
-          label: 'MangaDex Series',
-          labelBackgroundColor: Colors.orange,
-          labelStyle: const TextStyle(fontSize: 18.0),
-          onTap: () {
-            Navigator.pushNamed(context, '/mangadex-manga-selector');
-          }
-        ),
+            child: const Icon(
+              Icons.settings_system_daydream,
+              size: 25,
+            ),
+            backgroundColor: Colors.orange.withOpacity(0.3),
+            foregroundColor: Colors.white,
+            label: 'MangaDex Series',
+            labelBackgroundColor: Colors.orange,
+            labelStyle: const TextStyle(fontSize: 18.0),
+            onTap: () {
+              Navigator.pushNamed(context, '/mangadex-manga-selector');
+            }),
         SpeedDialChild(
           child: const Icon(
             Icons.settings_system_daydream,
