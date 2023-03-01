@@ -1,12 +1,12 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:simple_mangadex_api/api_types.dart';
 import 'package:v_2_all_media/comic_reader/comic_readers.dart';
-import 'package:v_2_all_media/mangadex/api_types.dart';
+import 'package:v_2_all_media/comic_reader/comic_volume_reader.dart';
 import 'package:v_2_all_media/util/arguments.dart';
-import 'package:v_2_all_media/util/futures.dart';
 import 'package:v_2_all_media/util/local_storage_init.dart';
 
 class MangaDexChapterReader extends StatefulWidget {
@@ -27,7 +27,9 @@ class _MangaDexChapterReaderState extends State<MangaDexChapterReader>
   late PageController _paginatedPageController;
   late AnimationController _overlayOpacityAnimationController;
   late Animation<double> _overlayOpacityAnimation;
+  late ScrollController _overlayScrollController;
   late OverlayEntry _nextVolumeOverlayEntry;
+  late ValueNotifier<ReaderMode> _readerMode;
   OverlayEntry? volumeSummaryOverlayEntry;
 
   @override
@@ -44,6 +46,10 @@ class _MangaDexChapterReaderState extends State<MangaDexChapterReader>
     _paginatedPageController = PageController();
     _nextVolumeOverlayEntry =
         OverlayEntry(builder: (context) => getToNextVolumeOverlay(context));
+    _overlayScrollController =
+        ScrollController(initialScrollOffset: _currentPage.value * 104);
+
+    _readerMode = ValueNotifier(ReaderMode.horizontalPaginated);
 
     super.initState();
   }
@@ -61,60 +67,79 @@ class _MangaDexChapterReaderState extends State<MangaDexChapterReader>
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: waitForFuture(
-          loading: const SpinKitRing(size: 100, color: Colors.orange),
-          future: widget.args.result.sortedChapters[widget.args.currentIndex]
-              .getChapterData(),
-          builder: (context, data) {
-            return WillPopScope(
-              onWillPop: () async {
-                await setLocalStorageCurrentPage(
-                    _currentPage.value, data.data.id);
-                if (_nextVolumeOverlayEntry.mounted) {
-                  _nextVolumeOverlayEntry.remove();
-                }
+        body: WillPopScope(
+          onWillPop: () async {
+            await setLocalStorageCurrentPage(_currentPage.value,
+                widget.args.result.sortedChapters[widget.args.currentIndex].id);
+            if (_nextVolumeOverlayEntry.mounted) {
+              _nextVolumeOverlayEntry.remove();
+            }
 
-                if (volumeSummaryOverlayEntry != null &&
-                    volumeSummaryOverlayEntry!.mounted) {
-                  volumeSummaryOverlayEntry!.remove();
-                }
+            if (volumeSummaryOverlayEntry != null &&
+                volumeSummaryOverlayEntry!.mounted) {
+              volumeSummaryOverlayEntry!.remove();
+            }
 
-                SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-                    overlays: SystemUiOverlay.values);
+            SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+                overlays: SystemUiOverlay.values);
 
-                return true;
-              },
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return GestureDetector(
-                    onTapUp: (details) {
-                      overlayOnTapUpHandler(
-                          context, constraints, details, widget.args.result);
-                    },
-                    child: PaginatedReader(
-                      currentPage: _currentPage,
-                      mangaDexPages: data.data,
-                      animateOverlayListViewToPage:
-                          animateOverlayListViewToPage,
-                      axis: Axis.horizontal,
-                      horizontalPaginatedPageController:
-                          _paginatedPageController,
-                      showToNextVolumeOverlay: showToNextVolumeOverlay,
-                      removeToNextVolumeOverlay: removeToNextVolumeOverlay,
-                      setDisplayedPages: setDisplayedPages,
-                    ),
-                  );
-                },
-              ),
-            );
+            return true;
           },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return GestureDetector(
+                onTapUp: (details) {
+                  overlayOnTapUpHandler(
+                      context, constraints, details, widget.args.result);
+                },
+                child: Builder(
+                  builder: (context) {
+                    if (_readerMode.value == ReaderMode.horizontalPaginated) {
+                      return PaginatedReader(
+                        currentPage: _currentPage,
+                        mangaDexPages: widget.args.result
+                            .sortedChapters[widget.args.currentIndex],
+                        animateOverlayListViewToPage:
+                            animateOverlayListViewToPage,
+                        axis: Axis.horizontal,
+                        horizontalPaginatedPageController:
+                            _paginatedPageController,
+                        showToNextVolumeOverlay: showToNextVolumeOverlay,
+                        removeToNextVolumeOverlay: removeToNextVolumeOverlay,
+                        setDisplayedPages: setDisplayedPages,
+                      );
+                    } else if (_readerMode.value ==
+                        ReaderMode.verticalPaginated) {}
+
+                    return Container();
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget getMangaOverlayWidget(
-      BoxConstraints constraints, MangaDexMangaAggregateResult result) {
+  Widget getMangaOverlayWidget(BoxConstraints constraints, Manga result) {
+    if (_overlayScrollController.hasClients) {
+      if (_currentPage.value * 104 >=
+          _overlayScrollController.position.maxScrollExtent) {
+        _overlayScrollController
+            .jumpTo(_overlayScrollController.position.maxScrollExtent - 0.1);
+        _overlayScrollController.animateTo(
+            _overlayScrollController.position.maxScrollExtent + 0.1,
+            duration: const Duration(milliseconds: 1),
+            curve: Curves.easeInOutExpo);
+      } else {
+        _overlayScrollController.jumpTo((_currentPage.value * 104) - 0.1);
+        _overlayScrollController.animateTo(_currentPage.value * 104 + 0.1,
+            duration: const Duration(milliseconds: 1),
+            curve: Curves.easeInOutExpo);
+      }
+    }
+
     return Opacity(
       opacity: _overlayOpacityAnimation.value,
       child: Stack(
@@ -127,26 +152,20 @@ class _MangaDexChapterReaderState extends State<MangaDexChapterReader>
               padding: const EdgeInsets.all(12),
               color: Colors.grey.shade900.withOpacity(0.9),
               child: Center(
-                child: waitForFuture(
-                  loading: Container(),
-                  future: widget
-                      .args.result.sortedChapters[widget.args.currentIndex]
-                      .getChapterData(),
-                  builder: (context, data) {
-                    return AutoSizeText(
-                      data.data.attributes.title == ""
-                          ? "Chapter ${data.data.attributes.chapter}"
-                          : data.data.attributes.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        decoration: TextDecoration.none,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                    );
-                  },
+                  child: AutoSizeText(
+                widget.args.result.sortedChapters[widget.args.currentIndex]
+                            .title! ==
+                        ""
+                    ? "Chapter ${widget.args.result.sortedChapters[widget.args.currentIndex].chapterString}"
+                    : widget.args.result
+                        .sortedChapters[widget.args.currentIndex].title!,
+                style: const TextStyle(
+                  color: Colors.white,
+                  decoration: TextDecoration.none,
                 ),
-              ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+              )),
             ),
           ),
           Positioned(
@@ -160,8 +179,53 @@ class _MangaDexChapterReaderState extends State<MangaDexChapterReader>
                 builder: (context, value, child) {
                   return Column(
                     children: [
+                      const SizedBox(height: 10),
                       AutoSizeText(
-                          "${_currentPage.value + 1}/${result.sortedChapters[widget.args.currentIndex]}"),
+                        "${_currentPage.value + 1}/${result.sortedChapters[widget.args.currentIndex].pages}",
+                        maxLines: 1,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          decoration: TextDecoration.none,
+                          fontSize: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: constraints.maxWidth,
+                        height: constraints.maxHeight * 0.15,
+                        child: ListView.builder(
+                          controller: _overlayScrollController,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              width: 100,
+                              margin: const EdgeInsets.symmetric(horizontal: 2),
+                              decoration: BoxDecoration(
+                                border:
+                                    Border.all(width: 1, color: Colors.white),
+                              ),
+                              child: GestureDetector(
+                                onTapUp: (details) {
+                                  if (_readerMode.value ==
+                                      ReaderMode.horizontalPaginated) {
+                                    _paginatedPageController.jumpToPage(index);
+                                  }
+                                },
+                                child: CachedNetworkImage(
+                                  imageUrl: widget
+                                      .args
+                                      .result
+                                      .sortedChapters[widget.args.currentIndex]
+                                      .infallibleImageLinks[index],
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            );
+                          },
+                          scrollDirection: Axis.horizontal,
+                          itemCount: result
+                              .sortedChapters[widget.args.currentIndex].pages,
+                        ),
+                      ),
                     ],
                   );
                 },
@@ -174,7 +238,7 @@ class _MangaDexChapterReaderState extends State<MangaDexChapterReader>
   }
 
   overlayOnTapUpHandler(BuildContext context, BoxConstraints constraints,
-      TapUpDetails details, MangaDexMangaAggregateResult pages) {
+      TapUpDetails details, Manga pages) {
     final upperBound = constraints.maxHeight * 0.33;
     final lowerBound = constraints.maxHeight * 0.66;
 
@@ -227,6 +291,12 @@ class _MangaDexChapterReaderState extends State<MangaDexChapterReader>
               ),
               onTapUp: (details) {
                 removeToNextVolumeOverlay();
+
+                if (volumeSummaryOverlayEntry != null &&
+                    volumeSummaryOverlayEntry!.mounted) {
+                  volumeSummaryOverlayEntry!.remove();
+                }
+
                 Navigator.popAndPushNamed(context, '/mangadex-volume-reader',
                     arguments: MangaDexChapterReaderArgs(
                         currentIndex: widget.args.currentIndex + 1,
@@ -239,11 +309,27 @@ class _MangaDexChapterReaderState extends State<MangaDexChapterReader>
     );
   }
 
-  animateOverlayListViewToPage(int page) {}
+  animateOverlayListViewToPage(int page) {
+    if (!_overlayScrollController.hasClients) {
+      return;
+    }
+
+    if (_currentPage.value * 104 >=
+        _overlayScrollController.position.maxScrollExtent) {
+      _overlayScrollController.animateTo(
+          _overlayScrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInExpo);
+    } else {
+      _overlayScrollController.animateTo(page * 104,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInExpo);
+    }
+  }
 
   showToNextVolumeOverlay(BuildContext context) {
     if (!_nextVolumeOverlayEntry.mounted &&
-        widget.args.currentIndex < widget.args.result.totalChapterCount) {
+        widget.args.currentIndex < widget.args.result.chapters.length - 1) {
       final overlayState = Overlay.of(context);
 
       try {

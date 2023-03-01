@@ -57,8 +57,7 @@ class _MangaDexChapterSelectorState extends State<MangaDexChapterSelector> {
                               Icons.settings_system_daydream,
                               size: 30,
                             ),
-                            // ignore: prefer_const_constructors
-                            title: Text(
+                            title: const Text(
                               "MangaDex Chapter ID",
                               textAlign: TextAlign.center,
                             ),
