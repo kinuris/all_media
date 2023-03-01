@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:v_2_all_media/mangadex/api_types.dart';
+import 'package:simple_mangadex_api/api_types.dart';
 import 'package:v_2_all_media/util/computations.dart';
 import 'package:v_2_all_media/util/custom_scroll_physics.dart';
 import 'package:pixel_snap/material.dart' as snap;
@@ -134,7 +134,7 @@ class _VerticalPaginatedReaderState extends State<VerticalPaginatedReader> {
 // ignore: must_be_immutable
 class PaginatedReader extends StatefulWidget {
   List<ComicPage>? pages;
-  MangaDexGetChapterData? mangaDexPages;
+  Chapter? mangaDexPages;
   final ValueNotifier<int> currentPage;
   final FilterQuality filterQuality;
   final PageController horizontalPaginatedPageController;
@@ -208,9 +208,39 @@ class _PaginatedReaderState extends State<PaginatedReader> {
       );
     } else if (widget.mangaDexPages != null) {
       return waitForFuture(
-        future: widget.mangaDexPages!.fetchImageLinks(),
+        future: Future(() async {
+          try {
+            return await widget.mangaDexPages!.imageLinks;
+          } catch (_) {
+            return <String>[];
+          }
+        }),
         loading: const SpinKitRing(color: Colors.orange, size: 100),
         builder: (context, data) {
+          if (data.isEmpty) {
+            return Container(
+              color: Colors.grey.shade900,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(
+                      Icons.error,
+                      color: Colors.red,
+                      size: 100,
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Invalid MangaDex Chapter",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    )
+                  ],
+                ),
+              ),
+            );
+          }
+
           final imageProviders =
               data.map((link) => CachedNetworkImageProvider(link)).toList();
 
@@ -291,7 +321,7 @@ class _PaginatedReaderState extends State<PaginatedReader> {
         widget.removeToNextVolumeOverlay();
       }
     } else if (widget.mangaDexPages != null) {
-      if (index == widget.mangaDexPages!.attributes.pages - 1) {
+      if (index == widget.mangaDexPages!.pages! - 1) {
         widget.showToNextVolumeOverlay(context);
       } else {
         widget.removeToNextVolumeOverlay();
