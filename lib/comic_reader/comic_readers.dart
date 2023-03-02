@@ -10,8 +10,6 @@ import 'package:pixel_snap/material.dart' as snap;
 import 'package:extended_image/extended_image.dart' as ext_img;
 import 'package:v_2_all_media/util/futures.dart';
 
-// TODO: VERTICAL CONTINUOUS READER
-
 class VerticalContinuousReader extends StatefulWidget {
   final List<ComicPage> pages;
   final ValueNotifier<int> currentPage;
@@ -62,6 +60,8 @@ class _VerticalContinuousReaderState extends State<VerticalContinuousReader> {
 
           final last = visibleElements.last;
 
+          // TODO: Add update on change of visibleElements.first
+
           if (last.index != widget.currentPage.value) {
             widget.currentPage.value = last.index;
             widget.setDisplayedPages(visibleElements
@@ -109,8 +109,6 @@ class _VerticalContinuousReaderState extends State<VerticalContinuousReader> {
   }
 }
 
-// TODO: VERTICAL PAGINATED READER
-
 class VerticalPaginatedReader extends StatefulWidget {
   final List<ComicPage> pages;
 
@@ -129,8 +127,6 @@ class _VerticalPaginatedReaderState extends State<VerticalPaginatedReader> {
   }
 }
 
-// TODO: HORIZONTAL PAGINATED READER
-// TODO:
 // ignore: must_be_immutable
 class PaginatedReader extends StatefulWidget {
   List<ComicPage>? pages;
@@ -179,7 +175,6 @@ class _PaginatedReaderState extends State<PaginatedReader> {
   @override
   Widget build(BuildContext context) {
     if (widget.pages != null) {
-      // TODO: Defer to next tick
       Future.delayed(Duration.zero, () {
         widget.horizontalPaginatedPageController
             .jumpToPage(widget.currentPage.value);
@@ -329,8 +324,6 @@ class _PaginatedReaderState extends State<PaginatedReader> {
     }
   }
 }
-
-// TODO: HORIZONTAL CONTINUOUS READER
 
 class HorizontalContinuousReader extends StatefulWidget {
   final List<ComicPage> pages;

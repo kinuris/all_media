@@ -9,6 +9,12 @@ import 'package:v_2_all_media/util/local_storage_init.dart';
 
 enum MangaSelectorAction { initialization, addManga, deleteManga }
 
+// TODO: Deletion MUST happen after at dispose()
+// TODO: Add tags to ListTile subtitle
+// TODO: Add options to change (primary and secodary) language
+// TODO: Add info page with larger cover image
+// TODO: Implement download and .cbz (zip) compression
+
 class MangaDexMangaSelector extends StatefulWidget {
   const MangaDexMangaSelector({Key? key}) : super(key: key);
 
@@ -61,8 +67,7 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                               Icons.settings_system_daydream,
                               size: 30,
                             ),
-                            // ignore: prefer_const_constructors
-                            title: Text(
+                            title: const Text(
                               "MangaDex Manga ID or URL",
                               textAlign: TextAlign.center,
                             ),
@@ -105,6 +110,7 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                                   if (!await Manga.isValidId(parsedText)) {
                                     _textEditingController.clear();
 
+                                    // ignore: use_build_context_synchronously
                                     if (!context.mounted) return;
                                     showSnackBarMessage(
                                         context, "Manga is Invalid",
@@ -117,12 +123,14 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                                   if (!_mangaIds.contains(parsedText)) {
                                     setMangaIds([..._mangaIds, parsedText]);
                                   } else {
+                                    // ignore: use_build_context_synchronously
                                     if (!context.mounted) return;
                                     showSnackBarMessage(
                                         context, "Manga Already registered");
                                   }
 
                                   _textEditingController.clear();
+                                  // ignore: use_build_context_synchronously
                                   if (!context.mounted) return;
                                   Navigator.pop(context);
                                 },
@@ -206,8 +214,9 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                             borderRadius: BorderRadius.circular(3),
                             child: Container(
                               decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.orange),
-                                  borderRadius: BorderRadius.circular(3)),
+                                border: Border.all(color: Colors.orange),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
                               width: 60,
                               height: 150,
                               child: const SpinKitRing(
@@ -247,13 +256,26 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                                 ),
                               ),
                             ),
-                            title: AutoSizeText(
-                              data.titles['en'] ??
-                                  data.titles['jp-ro'] ??
-                                  data.titles['jp'] ??
-                                  data.titles.values.first,
-                              maxLines: 2,
-                              style: const TextStyle(color: Colors.white),
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AutoSizeText(
+                                  data.titles['en'] ??
+                                      data.titles['jp-ro'] ??
+                                      data.titles['jp'] ??
+                                      data.titles.values.first,
+                                  maxLines: 2,
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                AutoSizeText(
+                                  data.formattedTags.join(", "),
+                                  maxFontSize: 10,
+                                  minFontSize: 10,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: Colors.white),
+                                )
+                              ],
                             ),
                             trailing: IconButton(
                               onPressed: () {},
