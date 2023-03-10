@@ -631,12 +631,13 @@ class _ComicVolumeReaderState extends State<ComicVolumeReader>
 
                 Navigator.popAndPushNamed(context, '/comic-volume-reader',
                     arguments: ComicVolumeReaderArgs(
-                        sortedVolumePaths: widget.arguments.sortedVolumePaths,
-                        absoluteVolumePath: widget.arguments.sortedVolumePaths[
-                            widget.arguments.indexInSortedVolumes + 1],
-                        indexInSortedVolumes:
-                            widget.arguments.indexInSortedVolumes + 1,
-                        assumeReaderMode: _readerMode.value));
+                      sortedVolumePaths: widget.arguments.sortedVolumePaths,
+                      absoluteVolumePath: widget.arguments.sortedVolumePaths[
+                          widget.arguments.indexInSortedVolumes + 1],
+                      indexInSortedVolumes:
+                          widget.arguments.indexInSortedVolumes + 1,
+                      assumeReaderMode: _readerMode.value,
+                    ));
               },
             ),
           ),

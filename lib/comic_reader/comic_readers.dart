@@ -50,6 +50,8 @@ class _VerticalContinuousReaderState extends State<VerticalContinuousReader> {
 
   @override
   Widget build(BuildContext context) {
+    int previousFirst = -1;
+
     Future.delayed(
       Duration.zero,
       () {
@@ -58,11 +60,13 @@ class _VerticalContinuousReaderState extends State<VerticalContinuousReader> {
               itemPositionsListener.itemPositions.value.toList();
           visibleElements.sort((a, b) => a.index.compareTo(b.index));
 
+          final first = visibleElements.first;
           final last = visibleElements.last;
 
           // TODO: Add update on change of visibleElements.first
-
-          if (last.index != widget.currentPage.value) {
+          if (last.index != widget.currentPage.value ||
+              first.index != previousFirst) {
+            previousFirst = first.index;
             widget.currentPage.value = last.index;
             widget.setDisplayedPages(visibleElements
                 .map((element) => element.index)
