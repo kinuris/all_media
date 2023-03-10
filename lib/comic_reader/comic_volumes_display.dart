@@ -6,6 +6,7 @@ import 'package:v_2_all_media/util/arguments.dart';
 import 'package:v_2_all_media/comic_reader/comic_volume_settings.dart';
 import 'package:v_2_all_media/util/computations.dart';
 import 'package:v_2_all_media/util/futures.dart';
+import 'package:extended_image/extended_image.dart' as ext_img;
 
 class VolumesDisplay extends StatelessWidget {
   final String folderResourcePath;
@@ -46,9 +47,21 @@ class VolumesDisplay extends StatelessWidget {
                           indexInSortedVolumes: index),
                     );
                   },
-                  child: Image.file(
-                    thumbnail,
+                  child: Image(
                     fit: BoxFit.cover,
+                    image: ext_img.ExtendedFileImageProvider(thumbnail),
+                    frameBuilder:
+                        (context, child, frame, wasSynchronouslyLoaded) {
+                      if (wasSynchronouslyLoaded) {
+                        return child;
+                      }
+
+                      return AnimatedOpacity(
+                        opacity: frame == null ? 0 : 1,
+                        duration: const Duration(milliseconds: 500),
+                        child: child,
+                      );
+                    },
                   ),
                 );
               }).toList();
