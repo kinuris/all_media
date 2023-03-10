@@ -31,6 +31,8 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
               .toList() ??
           [];
 
+  final List<String> _deletedIds = [];
+
   setMangaIds(List<String> mangaIds) {
     setState(() {
       _mangaIds.clear();
@@ -41,6 +43,11 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
   @override
   void dispose() async {
     super.dispose();
+
+    for (var deletedId in _deletedIds) {
+      _mangaIds.remove(deletedId);
+    }
+
     await localStorage.setItem("MangaDex-manga", _mangaIds);
   }
 
@@ -170,9 +177,8 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
               ),
             ),
             Expanded(
-              child: ListView.separated(
+              child: ListView.builder(
                 itemCount: _mangaIds.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 3),
                 itemBuilder: (context, index) {
                   return Dismissible(
                     background: Row(
@@ -199,95 +205,100 @@ class _MangaDexMangaSelectorState extends State<MangaDexMangaSelector> {
                       ],
                     ),
                     onDismissed: (direction) {
-                      setState(() {
-                        _mangaIds.removeAt(index);
-                      });
+                      _deletedIds.add(_mangaIds[index]);
                     },
                     key: ValueKey("$index+${_mangaIds[index]}"),
-                    child: waitForFuture(
-                      loading: Container(
-                        color: Colors.grey[850],
-                        child: ListTile(
-                          visualDensity: const VisualDensity(vertical: 4),
-                          contentPadding: const EdgeInsets.all(6),
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.orange),
+                    child: Column(
+                      children: [
+                        waitForFuture(
+                          loading: Container(
+                            color: Colors.grey[850],
+                            child: ListTile(
+                              visualDensity: const VisualDensity(vertical: 4),
+                              contentPadding: const EdgeInsets.all(6),
+                              leading: ClipRRect(
                                 borderRadius: BorderRadius.circular(3),
-                              ),
-                              width: 60,
-                              height: 150,
-                              child: const SpinKitRing(
-                                color: Colors.orange,
-                                size: 40,
-                                lineWidth: 3,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      future: Manga.fromMangaDexMangaIdInfallible(
-                          _mangaIds[index], "en"),
-                      builder: (context, data) {
-                        return Container(
-                          color: Colors.grey[850],
-                          child: ListTile(
-                            visualDensity: const VisualDensity(vertical: 4),
-                            contentPadding: const EdgeInsets.all(6),
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(3),
-                              child: SizedBox(
-                                width: 60,
-                                height: 150,
-                                child: GestureDetector(
-                                  onTapUp: (details) {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/mangadex-volume-display',
-                                      arguments: data,
-                                    );
-                                  },
-                                  child: CachedNetworkImage(
-                                    imageUrl: data.coverArtLink,
-                                    fit: BoxFit.cover,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.orange),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  width: 60,
+                                  height: 150,
+                                  child: const SpinKitRing(
+                                    color: Colors.orange,
+                                    size: 40,
+                                    lineWidth: 3,
                                   ),
                                 ),
                               ),
                             ),
-                            title: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                AutoSizeText(
-                                  data.titles['en'] ??
-                                      data.titles['jp-ro'] ??
-                                      data.titles['jp'] ??
-                                      data.titles.values.first,
-                                  maxLines: 2,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                AutoSizeText(
-                                  data.formattedTags.join(", "),
-                                  maxFontSize: 10,
-                                  minFontSize: 10,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.white),
-                                )
-                              ],
-                            ),
-                            trailing: IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.info,
-                                color: Colors.orange,
-                                size: 30,
-                              ),
-                            ),
                           ),
-                        );
-                      },
+                          future: Manga.fromMangaDexMangaIdInfallible(
+                              _mangaIds[index], "en"),
+                          builder: (context, data) {
+                            return Container(
+                              color: Colors.grey[850],
+                              child: ListTile(
+                                visualDensity: const VisualDensity(vertical: 4),
+                                contentPadding: const EdgeInsets.all(6),
+                                leading: ClipRRect(
+                                  borderRadius: BorderRadius.circular(3),
+                                  child: SizedBox(
+                                    width: 60,
+                                    height: 150,
+                                    child: GestureDetector(
+                                      onTapUp: (details) {
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/mangadex-volume-display',
+                                          arguments: data,
+                                        );
+                                      },
+                                      child: CachedNetworkImage(
+                                        imageUrl: data.coverArtLink,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                title: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AutoSizeText(
+                                      data.titles['en'] ??
+                                          data.titles['jp-ro'] ??
+                                          data.titles['jp'] ??
+                                          data.titles.values.first,
+                                      maxLines: 2,
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                    ),
+                                    AutoSizeText(
+                                      data.formattedTags.join(", "),
+                                      maxFontSize: 10,
+                                      minFontSize: 10,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style:
+                                          const TextStyle(color: Colors.white),
+                                    )
+                                  ],
+                                ),
+                                trailing: IconButton(
+                                  onPressed: () {},
+                                  icon: const Icon(
+                                    Icons.info,
+                                    color: Colors.orange,
+                                    size: 30,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(height: 3),
+                      ],
                     ),
                   );
                 },
